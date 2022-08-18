@@ -8,12 +8,14 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
  * @dev ERC20 minting logic
  */
 contract MintableERC20 is ERC20 {
+    uint8 private immutable _decimals;
+
     constructor(
         string memory name,
         string memory symbol,
         uint8 decimals
     ) public ERC20(name, symbol) {
-        _setupDecimals(decimals);
+        _decimals = decimals;
     }
 
     /**
@@ -24,5 +26,9 @@ contract MintableERC20 is ERC20 {
     function mint(uint256 value) public returns (bool) {
         _mint(_msgSender(), value);
         return true;
+    }
+
+    function decimals() public view virtual override returns (uint8) {
+        return _decimals;
     }
 }
