@@ -66,13 +66,6 @@ interface IibToken is IERC20 {
     ) external;
 
     /**
-     * @dev Mints aTokens to the reserve treasury
-     * @param amount The amount of tokens getting minted
-     * @param index The new liquidity index of the reserve
-     */
-    function mintToTreasury(uint256 amount, uint256 index) external;
-
-    /**
      * @dev Transfers aTokens in the event of a borrow being liquidated, in case the liquidators reclaims the aToken
      * @param from The address getting liquidated, current owner of the aTokens
      * @param to The recipient
