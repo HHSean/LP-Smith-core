@@ -4,6 +4,8 @@ import "hardhat-deploy";
 
 require("dotenv").config();
 
+console.log(process.env.ALCHEMY_POLYGON_PROVIDER_URL);
+
 const config: HardhatUserConfig = {
   solidity: {
     version: "0.8.9",
@@ -16,8 +18,9 @@ const config: HardhatUserConfig = {
   },
   networks: {
     hardhat: {
+      chainId: 137,
       forking: {
-        url: `${process.env.HARDHAT_NODE_URL}`,
+        url: `${process.env.ALCHEMY_POLYGON_PROVIDER_URL!}`,
       },
       allowUnlimitedContractSize: true,
     },
