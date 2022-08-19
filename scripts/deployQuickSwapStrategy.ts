@@ -1,15 +1,15 @@
 import { ethers } from "hardhat";
-import * as dotenv from "dotenv";
 import Web3 from "web3";
 
 const hre = require("hardhat");
+const dotenv = require("dotenv");
 
 dotenv.config();
 
-const web3 = new Web3(process.env.ALCHEMY_POLYGON_PROVIDER_URL);
+const web3 = new Web3(process.env.ALCHEMY_POLYGON_PROVIDER_URL!!);
 
 const accountZeroPrivateKey =
-  process.env.FORKING_NETWORK_ACCOUNT_ZERO_PRIVATE_KEY;
+  process.env.FORKING_NETWORK_ACCOUNT_ZERO_PRIVATE_KEY!!;
 
 web3.eth.accounts.wallet.add(accountZeroPrivateKey);
 
@@ -25,7 +25,9 @@ async function main() {
   const USDT_WHALE_ADDRESS_IN_POLYGON =
     "0xF977814e90dA44bFA03b6295A0616a897441aceC";
 
-  const quickSwapStrategy = await QuickSwapStrategy.deploy();
+  const quickSwapStrategy = await QuickSwapStrategy.deploy(
+    "0xa5E0829CaCEd8fFDD4De3c43696c57F7D7A678ff"
+  );
 
   await hre.network.provider.request({
     method: "hardhat_impersonateAccount",

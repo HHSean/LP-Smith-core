@@ -3,15 +3,21 @@ pragma solidity ^0.8.9;
 
 import "hardhat/console.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 import "./interfaces/IUniswapV2Router02.sol";
 
-contract QuickSwapStrategy {
+contract QuickSwapStrategy is Ownable{
 
-    address public QUICK_SWAP_ROUTER_02_ADDRESS_IN_POLYGON_MAINNET = 0xa5E0829CaCEd8fFDD4De3c43696c57F7D7A678ff;
+    address public QUICK_SWAP_ROUTER_02_ADDRESS_IN_POLYGON_MAINNET;
 
-    IUniswapV2Router02 uniswapV2Router02 = IUniswapV2Router02(QUICK_SWAP_ROUTER_02_ADDRESS_IN_POLYGON_MAINNET);
+    IUniswapV2Router02 uniswapV2Router02;
 
     event Log(string message, uint val);
+
+    constructor(address _QUICK_SWAP_ROUTER_02_ADDRESS_IN_POLYGON_MAINNET) {
+        QUICK_SWAP_ROUTER_02_ADDRESS_IN_POLYGON_MAINNET = _QUICK_SWAP_ROUTER_02_ADDRESS_IN_POLYGON_MAINNET;
+        uniswapV2Router02 = IUniswapV2Router02(QUICK_SWAP_ROUTER_02_ADDRESS_IN_POLYGON_MAINNET);
+    }
 
     function addLiquidity(
         address _tokenA,
@@ -66,5 +72,9 @@ contract QuickSwapStrategy {
 
         emit Log("amountA", amountA);
         emit Log("amountB", amountB);
+    }
+
+    function setRouter(address _newRouterAddress) public onlyOwner {
+        QUICK_SWAP_ROUTER_02_ADDRESS_IN_POLYGON_MAINNET = _newRouterAddress;
     }
 }
