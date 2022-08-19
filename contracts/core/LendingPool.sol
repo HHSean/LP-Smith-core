@@ -57,7 +57,8 @@ contract LendingPool is ILendingPool {
         uint256 amount, // asset unit (not smToken unit)
         address to
     ) external override returns (uint256) {
-        // TODO
+        // TODO burn smToken
+        // TODO transfer asset from smToken to "to"
     }
 
     /**

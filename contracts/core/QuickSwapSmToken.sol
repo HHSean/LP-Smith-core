@@ -18,6 +18,15 @@ contract QuickSwapSmToken is ISmLpToken, IERC20, Ownable {
     mapping(address => uint256) public override balanceOf;
     mapping(address => mapping(address => uint256)) public override allowance;
 
+    struct UserStatus {
+        uint256 totalLpToken;
+        uint256 unrealisedLpToken;
+        uint256 initX;
+        uint256 initY;
+    }
+
+    mapping(address => UserStatus) userStatus;
+
     constructor(
         string memory name_,
         string memory symbol_,
@@ -88,8 +97,12 @@ contract QuickSwapSmToken is ISmLpToken, IERC20, Ownable {
         address user,
         uint256 amount,
         uint256 index
-    ) external onlyLendingPool returns (bool) {
-        // TODO mint token with exchange rate -> exchange rate is 1:1
+    ) external onlyLendingPool returns (uint256 _amountX, uint256 _amountY) {
+        // TODO _beforeMint() splits(burns) lp token. Recipient of x, y token (splitted) is lending pool
+        // TODO record how much x, y tokens came out from swap at _amountX, _amountY
+        // TODO update userStatus initX, initY (increase _amountX, _amountY each)
+        // TODO add amount at unrealisedLpToken at userStatus
+        // TODO mint token same qty with amount
     }
 
     function burn(
@@ -98,7 +111,11 @@ contract QuickSwapSmToken is ISmLpToken, IERC20, Ownable {
         uint256 amount,
         uint256 index
     ) external onlyLendingPool {
-        // TODO burn token with exchange rate -> exchange rate is 1:1
+        // TODO _beforeBurn() mints lp token. Recipient of lp token is user
+        // TODO reduce initX, initY proportionally
+        // TODO reduce unrealisedLpToken
+        // TODO reduce totalLpToken
+        // TODO burn token same qty with amount
     }
 
     function transferOnLiquidation(
