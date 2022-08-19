@@ -42,6 +42,7 @@ node_modules/
 jspm_packages/
 typechain-types/
 artifacts/
+cache/
 
 # TypeScript v1 declaration files
 typings/
