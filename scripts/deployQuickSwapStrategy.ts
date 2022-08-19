@@ -1,10 +1,8 @@
 import { ethers } from "hardhat";
+import * as dotenv from "dotenv";
+import Web3 from "web3";
 
 const hre = require("hardhat");
-
-const Web3 = require("web3");
-
-const dotenv = require("dotenv");
 
 dotenv.config();
 
