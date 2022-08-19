@@ -6,4 +6,8 @@ interface ISmLpToken {
     function getPositionValue(address user) external view;
 
     function LP_TOKEN_CONTRACT_ADDRESS() external view returns (address);
+
+    function tokenX() external view returns (address);
+
+    function tokenY() external view returns (address);
 }

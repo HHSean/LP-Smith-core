@@ -13,6 +13,8 @@ contract QuickSwapSmToken is ISmLpToken, IERC20, Ownable {
     string private _symbol;
     address _pool;
     address public override LP_TOKEN_CONTRACT_ADDRESS;
+    address public override tokenX;
+    address public override tokenY;
 
     uint256 public override totalSupply;
     mapping(address => uint256) public override balanceOf;

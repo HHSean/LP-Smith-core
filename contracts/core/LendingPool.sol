@@ -23,8 +23,8 @@ contract LendingPool is ILendingPool {
         address onBehalfOf
     ) external override {
         // TODO transfer lpTokenAddress from msg.sender to smLpTokenAddress
-        // TODO call smLpToken to mint token
-        // IERC20(smLpTokenAddresses[lpTokenAddress]).mint();
+        // TODO call smLpToken to mint token (disperse LP token is held here)
+        // TODO transfer token X, token Y to lending pools here
     }
 
     function withdrawERC20LpToken(
@@ -32,9 +32,10 @@ contract LendingPool is ILendingPool {
         uint256 amount, // lp token qty (not sm lp token)
         address to
     ) external override returns (uint256) {
-        // TODO check if user has LP token generated
-        // TODO if don't, mint LP token and transfer to recipient
-        // TODO burn smLpToken
+        // TODO get how much LP tokens should be minted(consider total LP token # - unrealised LP token #)
+        // TODO get how much tokens are needed to mint that much LP token
+        // TODO transfer token X, token Y to smLpToken
+        // TODO burn smLpToken (mint LP token is held here)
     }
 
     /**
@@ -46,7 +47,7 @@ contract LendingPool is ILendingPool {
         address onBehalfOf
     ) external override {
         // TODO transfer asset to smToken
-        // TODO mint smToken
+        // TODO mint smToken -> debt calculation held inside here (to get smToken exchage rate)
     }
 
     /**
@@ -57,7 +58,7 @@ contract LendingPool is ILendingPool {
         uint256 amount, // asset unit (not smToken unit)
         address to
     ) external override returns (uint256) {
-        // TODO burn smToken
+        // TODO burn smToken -> debt calculation held inside here (to get smToken exchange rate)
         // TODO transfer asset from smToken to "to"
     }
 
@@ -69,7 +70,10 @@ contract LendingPool is ILendingPool {
         uint256 amount,
         address onBehalfOf
     ) external override {
-        // TODO
+        // TODO 1. validate if user can borrow asset
+        // TODO 1-1. should calculate user's deposit value
+        // TODO 1-2. make sure it doesn't exceed liquidation threshold
+        // TODO 2. transfer asset to user and update borrowed amount
     }
 
     /**
@@ -80,6 +84,7 @@ contract LendingPool is ILendingPool {
         uint256 amount,
         address onBehalfOf
     ) external override returns (uint256) {
-        // TODO
+        // TODO transfer asset to smToken
+        // TODO update borrowed amount of user
     }
 }
