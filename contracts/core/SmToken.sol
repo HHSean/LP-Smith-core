@@ -1,12 +1,12 @@
 pragma solidity ^0.8.9;
-import {IibToken} from "./interfaces/IibToken.sol";
+import {ISmToken} from "./interfaces/ISmToken.sol";
 import {ILendingPool} from "./interfaces/ILendingPool.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
-contract ibToken is IibToken, Ownable {
+contract SmToken is ISmToken, Ownable {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
     string private _name;
@@ -105,13 +105,17 @@ contract ibToken is IibToken, Ownable {
         address from,
         address to,
         uint256 value
-    ) external override {}
+    ) external override {
+        // TODO
+    }
 
     function transferUnderlyingTo(address user, uint256 amount)
         external
         override
         returns (uint256)
-    {}
+    {
+        // TODO
+    }
 
     function handleRepayment(address user, uint256 amount) external override {}
 

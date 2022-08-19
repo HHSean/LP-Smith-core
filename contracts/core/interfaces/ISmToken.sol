@@ -1,7 +1,7 @@
 pragma solidity ^0.8.9;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-interface IibToken is IERC20 {
+interface ISmToken is IERC20 {
     /**
      * @dev Emitted after the mint action
      * @param from The address performing the mint
