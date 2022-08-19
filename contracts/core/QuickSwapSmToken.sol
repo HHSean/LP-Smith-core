@@ -89,7 +89,7 @@ contract QuickSwapSmToken is ISmLpToken, IERC20, Ownable {
         uint256 amount,
         uint256 index
     ) external onlyLendingPool returns (bool) {
-        // TODO mint token with exchange rate
+        // TODO mint token with exchange rate -> exchange rate is 1:1
     }
 
     function burn(
@@ -98,7 +98,7 @@ contract QuickSwapSmToken is ISmLpToken, IERC20, Ownable {
         uint256 amount,
         uint256 index
     ) external onlyLendingPool {
-        // TODO burn token with exchange rate
+        // TODO burn token with exchange rate -> exchange rate is 1:1
     }
 
     function transferOnLiquidation(
