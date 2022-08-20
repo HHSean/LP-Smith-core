@@ -104,7 +104,7 @@ contract QuickSwapSmToken is ISmLpToken, IERC20, Ownable {
 
     function mint(
         address user,
-        uint256 amount,
+        uint256 amount, // LP token
         uint256 index
     ) external onlyLendingPool returns (uint256 _amountX, uint256 _amountY) {
         // TODO _beforeMint() splits(burns) lp token. Recipient of x, y token (splitted) is lending pool
@@ -118,7 +118,7 @@ contract QuickSwapSmToken is ISmLpToken, IERC20, Ownable {
     function burn(
         address user,
         address receiverOfUnderlying,
-        uint256 amount,
+        uint256 amount, // LP token
         uint256 index
     ) external onlyLendingPool {
         // TODO _beforeBurn() mints lp token. Recipient of lp token is smLpToken
