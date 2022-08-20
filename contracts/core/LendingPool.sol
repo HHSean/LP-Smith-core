@@ -4,6 +4,7 @@ import {ILendingPool} from "./interfaces/ILendingPool.sol";
 import {ISmLpToken} from "./interfaces/ISmLpToken.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
+// TODO Noah
 contract LendingPool is ILendingPool {
     ISmLpToken[] smLpTokens;
     mapping(address => address) smLpTokenAddresses;

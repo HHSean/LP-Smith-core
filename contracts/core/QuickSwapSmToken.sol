@@ -6,6 +6,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
+// TODO Oliver
 contract QuickSwapSmToken is ISmLpToken, IERC20, Ownable {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
