@@ -15,6 +15,7 @@ contract QuickSwapSmToken is ISmLpToken, IERC20, Ownable {
     string private _symbol;
     address _pool;
     address public override LP_TOKEN_CONTRACT_ADDRESS;
+    address public override STRATEGY_CONTRACT_ADDRESS;
     address public override tokenX;
     address public override tokenY;
 
@@ -40,11 +41,13 @@ contract QuickSwapSmToken is ISmLpToken, IERC20, Ownable {
     constructor(
         string memory name_,
         string memory symbol_,
-        address lpTokenContractAddress
+        address lpTokenContractAddress,
+        address strategyContractAddress
     ) {
         _name = name_;
         _symbol = symbol_;
         LP_TOKEN_CONTRACT_ADDRESS = lpTokenContractAddress;
+        STRATEGY_CONTRACT_ADDRESS = strategyContractAddress;
         tokenX = IUniswapV2Pair(LP_TOKEN_CONTRACT_ADDRESS).token0();
         tokenY = IUniswapV2Pair(LP_TOKEN_CONTRACT_ADDRESS).token1();
     }
@@ -58,10 +61,11 @@ contract QuickSwapSmToken is ISmLpToken, IERC20, Ownable {
         _pool = pool_;
     }
 
+    //Backlog
     function transfer(address to, uint256 amount) external returns (bool) {
         _transfer(to, amount);
     }
-
+    //Backlog
     function _transfer(address to, uint256 amount) internal returns (bool) {
         // TODO validate the aTokens between two users. Validate the transfer
         // TODO if health factor is still good after the transfer, it's allowed to transfer
@@ -177,7 +181,8 @@ contract QuickSwapSmToken is ISmLpToken, IERC20, Ownable {
         // TODO
     }
 
-    function _beforeTokenMint() internal {
+    function _beforeTokenMint(uint256 lpToken) internal returns (uint256 _tokenX, uint256 _tokenY){
+        
         require()
     }
 }

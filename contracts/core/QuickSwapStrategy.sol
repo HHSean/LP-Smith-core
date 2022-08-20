@@ -5,14 +5,14 @@ import "hardhat/console.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./interfaces/IUniswapV2Router02.sol";
+import "./interfaces/IStrategy.sol";
 
 // TODO Evan
-contract QuickSwapStrategy is Ownable {
+// TODO: need to use modifier
+contract QuickSwapStrategy is IStrategy, Ownable {
     address public QUICK_SWAP_ROUTER_02_ADDRESS_IN_POLYGON_MAINNET;
 
     IUniswapV2Router02 uniswapV2Router02;
-
-    event Log(string message, uint val);
 
     constructor(address _QUICK_SWAP_ROUTER_02_ADDRESS_IN_POLYGON_MAINNET) {
         QUICK_SWAP_ROUTER_02_ADDRESS_IN_POLYGON_MAINNET = _QUICK_SWAP_ROUTER_02_ADDRESS_IN_POLYGON_MAINNET;
@@ -55,21 +55,16 @@ contract QuickSwapStrategy is Ownable {
             _amountBDesired
         );
 
-        (uint _amountA, uint _amountB, uint _liquidity) = uniswapV2Router02
-            .addLiquidity(
-                _tokenA,
-                _tokenB,
-                _amountADesired,
-                _amountBDesired,
-                1,
-                1,
-                recipient,
-                block.timestamp
-            );
-
-        amountA = _amountA;
-        amountB = _amountB;
-        liquidity = _liquidity;
+        (amountA, amountB, liquidity) = uniswapV2Router02.addLiquidity(
+            _tokenA,
+            _tokenB,
+            _amountADesired,
+            _amountBDesired,
+            1,
+            1,
+            recipient,
+            block.timestamp
+        );
 
         emit Log("amountA", amountA);
         emit Log("amountB", amountB);
@@ -81,15 +76,16 @@ contract QuickSwapStrategy is Ownable {
         address _tokenB,
         address liquidityToken,
         address recipient
-    ) external {
-        uint liquidity = IERC20(liquidityToken).balanceOf(address(this));
+        uint liquidity
+    ) external returns (uint amountA, uint amountB) {\
+        require(liquidity < IERC20(liquidityToken).balanceOf(address(this)), "Insufficient Liquidity");
 
         IERC20(liquidityToken).approve(
             QUICK_SWAP_ROUTER_02_ADDRESS_IN_POLYGON_MAINNET,
             liquidity
         );
 
-        (uint amountA, uint amountB) = IUniswapV2Router02(uniswapV2Router02)
+        (amountA, amountB) = IUniswapV2Router02(uniswapV2Router02)
             .removeLiquidity(
                 _tokenA,
                 _tokenB,
@@ -103,6 +99,8 @@ contract QuickSwapStrategy is Ownable {
         emit Log("amountA", amountA);
         emit Log("amountB", amountB);
     }
+
+    //TODO: add functions for add/remove liquidity with ETH
 
     function setRouter(address _newRouterAddress) public onlyOwner {
         QUICK_SWAP_ROUTER_02_ADDRESS_IN_POLYGON_MAINNET = _newRouterAddress;
