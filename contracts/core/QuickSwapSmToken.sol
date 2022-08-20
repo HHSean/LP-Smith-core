@@ -1,6 +1,7 @@
 pragma solidity ^0.8.9;
 import {ISmLpToken} from "./interfaces/ISmLpToken.sol";
 import {ILendingPool} from "./interfaces/ILendingPool.sol";
+import {IUniswapV2Pair} from "./interfaces/IUniswapV2Pair.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
@@ -29,7 +30,7 @@ contract QuickSwapSmToken is ISmLpToken, IERC20, Ownable {
 
     struct UserStatus {
         uint256 totalLpToken;
-        uint256 unrealisedLpToken;
+        uint256 unrealizedLpToken;
         uint256 initX;
         uint256 initY;
     }
@@ -44,6 +45,8 @@ contract QuickSwapSmToken is ISmLpToken, IERC20, Ownable {
         _name = name_;
         _symbol = symbol_;
         LP_TOKEN_CONTRACT_ADDRESS = lpTokenContractAddress;
+        tokenX = IUniswapV2Pair(LP_TOKEN_CONTRACT_ADDRESS).token0();
+        tokenY = IUniswapV2Pair(LP_TOKEN_CONTRACT_ADDRESS).token1();
     }
 
     modifier onlyLendingPool() {
@@ -107,6 +110,7 @@ contract QuickSwapSmToken is ISmLpToken, IERC20, Ownable {
         uint256 amount, // LP token
         uint256 index
     ) external onlyLendingPool returns (uint256 _amountX, uint256 _amountY) {
+
         // TODO _beforeMint() splits(burns) lp token. Recipient of x, y token (splitted) is lending pool
         // TODO record how much x, y tokens came out from swap at _amountX, _amountY
         // TODO update userStatus initX, initY (increase _amountX, _amountY each)
@@ -169,10 +173,11 @@ contract QuickSwapSmToken is ISmLpToken, IERC20, Ownable {
         returns (bool sign, uint256 _potentialOnSale)
     {}
 
-    function getPendingOnSale(address asset)
-        external
-        view
-        override
-        returns (bool sign, uint256 _pendingOnSale)
-    {}
+    function getPositionValue(address user) external view override {
+        // TODO
+    }
+
+    function _beforeTokenMint() internal {
+        require()
+    }
 }
