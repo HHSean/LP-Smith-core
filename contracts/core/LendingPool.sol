@@ -23,7 +23,7 @@ contract LendingPool is ILendingPool {
         uint256 amount, // lp token qty
         address onBehalfOf
     ) external override {
-        // TODO transfer lpTokenAddress from msg.sender to smLpTokenAddress
+        // TODO transfer lpToken from msg.sender to smLpTokenAddress
         // TODO call smLpToken to mint token (disperse LP token is held here)
         // TODO transfer token X, token Y to lending pools here
     }

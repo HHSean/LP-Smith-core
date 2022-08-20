@@ -85,10 +85,11 @@ contract SmToken is ISmToken, Ownable {
         return true;
     }
 
+    // TODO how to record underlying asset liquidity
     function mint(
         address user,
-        uint256 amount,
-        uint256 index
+        uint256 amount, // underlying unit
+        uint256 debt // debt of the asset
     ) external onlyLendingPool returns (bool) {
         // TODO mint token with exchange rate
     }
@@ -96,8 +97,8 @@ contract SmToken is ISmToken, Ownable {
     function burn(
         address user,
         address receiverOfUnderlying,
-        uint256 amount,
-        uint256 index
+        uint256 amount, // underlying unit
+        uint256 debt // debt of the asset
     ) external onlyLendingPool {
         // TODO burn token with exchange rate
     }

@@ -21,6 +21,12 @@ contract QuickSwapSmToken is ISmLpToken, IERC20, Ownable {
     mapping(address => uint256) public override balanceOf;
     mapping(address => mapping(address => uint256)) public override allowance;
 
+    uint256 public totalInitX;
+    uint256 public totalInitY;
+
+    uint256 public onSaleX;
+    uint256 public onSaleY;
+
     struct UserStatus {
         uint256 totalLpToken;
         uint256 unrealisedLpToken;
@@ -105,6 +111,7 @@ contract QuickSwapSmToken is ISmLpToken, IERC20, Ownable {
         // TODO record how much x, y tokens came out from swap at _amountX, _amountY
         // TODO update userStatus initX, initY (increase _amountX, _amountY each)
         // TODO add amount at unrealisedLpToken at userStatus
+        // TODO add amount at totalLpToken at userStatus
         // TODO mint token same qty with amount
     }
 
@@ -114,7 +121,7 @@ contract QuickSwapSmToken is ISmLpToken, IERC20, Ownable {
         uint256 amount,
         uint256 index
     ) external onlyLendingPool {
-        // TODO _beforeBurn() mints lp token. Recipient of lp token is user
+        // TODO _beforeBurn() mints lp token. Recipient of lp token is smLpToken
         // TODO reduce initX, initY proportionally
         // TODO reduce unrealisedLpToken
         // TODO reduce totalLpToken
@@ -143,6 +150,14 @@ contract QuickSwapSmToken is ISmLpToken, IERC20, Ownable {
     {}
 
     function debt(address tokenAddress) external view override {
+        // TODO
+    }
+
+    function potentialOnSale(address tokenAddress) external view override {
+        // TODO
+    }
+
+    function pendingOnSale(address tokenAddress) external view override {
         // TODO
     }
 
