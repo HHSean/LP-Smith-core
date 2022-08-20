@@ -1,10 +1,9 @@
 pragma solidity ^0.8.9;
 
-interface ISmLpToken {
-    function getDebt(address tokenAddress)
-        external
-        view
-        returns (uint256 _debt);
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+
+interface ISmLpToken is IERC20 {
+    function debt(address tokenAddress) external view;
 
     function getPotentialOnSale(address asset)
         external

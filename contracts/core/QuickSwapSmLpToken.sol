@@ -2,26 +2,25 @@ pragma solidity ^0.8.9;
 import {ISmLpToken} from "./interfaces/ISmLpToken.sol";
 import {ILendingPool} from "./interfaces/ILendingPool.sol";
 import {IUniswapV2Pair} from "./interfaces/IUniswapV2Pair.sol";
+import {IStrategy} from "./interfaces/IStrategy.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
 // TODO Oliver
-contract QuickSwapSmToken is ISmLpToken, IERC20, Ownable {
+contract QuickSwapSmLpToken is ISmLpToken, ERC20, Ownable {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
-    string private _name;
-    string private _symbol;
+
     address _pool;
+
+    address public override LENDING_POOL_CONTRACT_ADDRESS;
     address public override LP_TOKEN_CONTRACT_ADDRESS;
     address public override STRATEGY_CONTRACT_ADDRESS;
     address public override tokenX;
     address public override tokenY;
-
-    uint256 public override totalSupply;
-    mapping(address => uint256) public override balanceOf;
-    mapping(address => mapping(address => uint256)) public override allowance;
 
     uint256 public totalInitX;
     uint256 public totalInitY;
@@ -41,11 +40,13 @@ contract QuickSwapSmToken is ISmLpToken, IERC20, Ownable {
     constructor(
         string memory name_,
         string memory symbol_,
+        address lendingPoolContractAddress,
         address lpTokenContractAddress,
         address strategyContractAddress
     ) {
         _name = name_;
         _symbol = symbol_;
+        LENDING_POOL_CONTRACT_ADDRESS = lendingPoolContractAddress;
         LP_TOKEN_CONTRACT_ADDRESS = lpTokenContractAddress;
         STRATEGY_CONTRACT_ADDRESS = strategyContractAddress;
         tokenX = IUniswapV2Pair(LP_TOKEN_CONTRACT_ADDRESS).token0();
@@ -62,35 +63,12 @@ contract QuickSwapSmToken is ISmLpToken, IERC20, Ownable {
     }
 
     //Backlog
+    /*
     function transfer(address to, uint256 amount) external returns (bool) {
         _transfer(to, amount);
-    }
-    //Backlog
-    function _transfer(address to, uint256 amount) internal returns (bool) {
-        // TODO validate the aTokens between two users. Validate the transfer
-        // TODO if health factor is still good after the transfer, it's allowed to transfer
-    }
+    }*/
 
-    function approve(
-        address owner,
-        address spender,
-        uint256 amount
-    ) external returns (bool) {
-        _approve(owner, spender, amount);
-    }
-
-    function _approve(
-        address owner,
-        address spender,
-        uint256 amount
-    ) internal returns (bool) {
-        require(owner != address(0), "ERC20: approve from the zero address");
-        require(spender != address(0), "ERC20: approve to the zero address");
-
-        allowance[owner][spender] = amount;
-        emit Approval(owner, spender, amount);
-    }
-
+    /*
     function transferFrom(
         address from,
         address to,
@@ -107,6 +85,12 @@ contract QuickSwapSmToken is ISmLpToken, IERC20, Ownable {
         );
         emit Transfer(from, to, amount);
         return true;
+    }*/
+
+    //Backlog: should apply user status for recipient
+    function _transfer(address to, uint256 amount) internal returns (bool) {
+        // TODO validate the aTokens between two users. Validate the transfer
+        // TODO if health factor is still good after the transfer, it's allowed to transfer
     }
 
     function mint(
@@ -114,7 +98,22 @@ contract QuickSwapSmToken is ISmLpToken, IERC20, Ownable {
         uint256 amount, // LP token
         uint256 index
     ) external onlyLendingPool returns (uint256 _amountX, uint256 _amountY) {
+        require(
+            liquidity <
+                IERC20(LP_TOKEN_CONTRACT_ADDRESS).balanceOf(address(this)),
+            "Insufficient Liquidity"
+        );
+        (_amountX, _amountY) = _beforeMint(amount);
 
+        userStatus[user].totalLpToken = userStatus[user].totalLpToken.add(
+            amount
+        );
+        userStatus[user].unrealizedLpToken = userStatus[user]
+            .unrealizedLpToken
+            .add(amount);
+        userStatus[user].initX = userStatus[user].initX.add(_amountX);
+        userStatus[user].initY = userStatus[user].initY.add(_amountY);
+        _mint(user, amount);
         // TODO _beforeMint() splits(burns) lp token. Recipient of x, y token (splitted) is lending pool
         // TODO record how much x, y tokens came out from swap at _amountX, _amountY
         // TODO update userStatus initX, initY (increase _amountX, _amountY each)
@@ -134,8 +133,11 @@ contract QuickSwapSmToken is ISmLpToken, IERC20, Ownable {
         // TODO reduce unrealisedLpToken
         // TODO reduce totalLpToken
         // TODO burn token same qty with amount
+        _burn(user, amount);
     }
 
+    // Not needed, this contract doesn't have assets
+    /*
     function transferOnLiquidation(
         address from,
         address to,
@@ -143,19 +145,13 @@ contract QuickSwapSmToken is ISmLpToken, IERC20, Ownable {
     ) external {
         // TODO
     }
-
     function transferUnderlyingTo(address user, uint256 amount)
         external
         returns (uint256)
     {
         // TODO
     }
-
-    function approve(address spender, uint256 amount)
-        external
-        override
-        returns (bool)
-    {}
+    */
 
     function getDebt(address tokenAddress)
         external
@@ -181,8 +177,24 @@ contract QuickSwapSmToken is ISmLpToken, IERC20, Ownable {
         // TODO
     }
 
-    function _beforeTokenMint(uint256 lpToken) internal returns (uint256 _tokenX, uint256 _tokenY){
-        
-        require()
+    function _beforeMint(uint256 liquidity)
+        internal
+        returns (uint256 _amountX, uint256 _amountY)
+    {
+        IERC20(LP_TOKEN_CONTRACT_ADDRESS).transfer(
+            STRATEGY_CONTRACT_ADDRESS,
+            liquidity
+        );
+
+        (_amountX, _amountY) = IStrategy(STRATEGY_CONTRACT_ADDRESS).burn(
+            tokenX,
+            tokenY,
+            LP_TOKEN_CONTRACT_ADDRESS,
+            address(this),
+            liquidity
+        );
+
+        IERC20(tokenX).transfer(LENDING_POOL_CONTRACT_ADDRESS, _amountX);
+        IERC20(tokenY).transfer(LENDING_POOL_CONTRACT_ADDRESS, _amountY);
     }
 }
