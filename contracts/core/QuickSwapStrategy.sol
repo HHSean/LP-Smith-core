@@ -6,13 +6,20 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./interfaces/IUniswapV2Router02.sol";
 import "./interfaces/IStrategy.sol";
+import "./interfaces/IUniswapV2Pair.sol";
+import './libraries/Math.sol';
+import "./libraries/SafeMath.sol";
 
 // TODO Evan
 // TODO: need to use modifier
 contract QuickSwapStrategy is IStrategy, Ownable {
+    using SafeMath  for uint;
+
     address public QUICK_SWAP_ROUTER_02_ADDRESS_IN_POLYGON_MAINNET;
 
     IUniswapV2Router02 uniswapV2Router02;
+
+    uint public constant MINIMUM_LIQUIDITY = 10**3;
 
     constructor(address _QUICK_SWAP_ROUTER_02_ADDRESS_IN_POLYGON_MAINNET) {
         QUICK_SWAP_ROUTER_02_ADDRESS_IN_POLYGON_MAINNET = _QUICK_SWAP_ROUTER_02_ADDRESS_IN_POLYGON_MAINNET;
@@ -77,7 +84,7 @@ contract QuickSwapStrategy is IStrategy, Ownable {
         address liquidityToken,
         address recipient
         uint liquidity
-    ) external returns (uint amountA, uint amountB) {\
+    ) external returns (uint amountA, uint amountB) {
         require(liquidity < IERC20(liquidityToken).balanceOf(address(this)), "Insufficient Liquidity");
 
         IERC20(liquidityToken).approve(
@@ -104,5 +111,16 @@ contract QuickSwapStrategy is IStrategy, Ownable {
 
     function setRouter(address _newRouterAddress) public onlyOwner {
         QUICK_SWAP_ROUTER_02_ADDRESS_IN_POLYGON_MAINNET = _newRouterAddress;
+    }
+
+    function getEstimatedLpTokenAmount(address _liquidityToken, uint _amountADesired, uint _amountBDesired) public view returns(uint liquidity) {
+        uint liquidityTokenTotalSupply = IUniswapV2Pair(_liquidityToken).totalSupply();
+        (uint112 _reserve0, uint112 _reserve1,) = IUniswapV2Pair(_liquidityToken).getReserves();
+        if (liquidityTokenTotalSupply == 0) {
+            liquidity = Math.sqrt(_amountADesired.mul(_amountBDesired)).sub(MINIMUM_LIQUIDITY);
+        } else {
+            liquidity = Math.min(_amountADesired.mul(liquidityTokenTotalSupply) / _reserve0, _amountBDesired.mul(liquidityTokenTotalSupply) / _reserve1);
+        }
+        require(liquidity > 0, 'UniswapV2: INSUFFICIENT_LIQUIDITY_MINTED');
     }
 }
