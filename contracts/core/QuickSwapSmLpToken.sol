@@ -88,7 +88,7 @@ contract QuickSwapSmLpToken is ISmLpToken, ERC20, Ownable {
     }*/
 
     //Backlog: should apply user status for recipient
-    function _transfer(address to, uint256 amount) internal returns (bool) {
+    function _transfer(address to, uint256 amount) internal override returns (bool) {
         // TODO validate the aTokens between two users. Validate the transfer
         // TODO if health factor is still good after the transfer, it's allowed to transfer
     }
@@ -96,7 +96,6 @@ contract QuickSwapSmLpToken is ISmLpToken, ERC20, Ownable {
     function mint(
         address user,
         uint256 amount, // LP token
-        uint256 index
     ) external onlyLendingPool returns (uint256 _amountX, uint256 _amountY) {
         require(
             liquidity <
@@ -118,9 +117,7 @@ contract QuickSwapSmLpToken is ISmLpToken, ERC20, Ownable {
 
     function burn(
         address user,
-        address receiverOfUnderlying,
         uint256 amount, // LP token
-        uint256 index
     ) external onlyLendingPool {
         // TODO _beforeBurn() mints lp token. Recipient of lp token is smLpToken
         // TODO reduce initX, initY proportionally
@@ -154,24 +151,22 @@ contract QuickSwapSmLpToken is ISmLpToken, ERC20, Ownable {
     function getDebt(address tokenAddress)
         external
         view
-        override
         returns (uint256 _debt)
     {
         // TODO
     }
 
-    function getPositionValue(address user) external view override {
+    function getPositionValue(address user) external view {
         // TODO
     }
 
     function getPotentialOnSale(address asset)
         external
         view
-        override
         returns (bool sign, uint256 _potentialOnSale)
     {}
 
-    function getPositionValue(address user) external view override {
+    function getPositionValue(address user) external view {
         // TODO
     }
 
