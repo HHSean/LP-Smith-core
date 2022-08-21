@@ -114,12 +114,6 @@ contract QuickSwapSmLpToken is ISmLpToken, ERC20, Ownable {
         userStatus[user].initX = userStatus[user].initX.add(_amountX);
         userStatus[user].initY = userStatus[user].initY.add(_amountY);
         _mint(user, amount);
-        // TODO _beforeMint() splits(burns) lp token. Recipient of x, y token (splitted) is lending pool
-        // TODO record how much x, y tokens came out from swap at _amountX, _amountY
-        // TODO update userStatus initX, initY (increase _amountX, _amountY each)
-        // TODO add amount at unrealisedLpToken at userStatus
-        // TODO add amount at totalLpToken at userStatus
-        // TODO mint token same qty with amount
     }
 
     function burn(
@@ -135,6 +129,10 @@ contract QuickSwapSmLpToken is ISmLpToken, ERC20, Ownable {
         // TODO burn token same qty with amount
         _burn(user, amount);
     }
+
+    function _addLiquidity() returns (uint liquidity) {}
+
+    function _removeLiquidity() returns (uint amountX, uint amountY) {}
 
     // Not needed, this contract doesn't have assets
     /*
