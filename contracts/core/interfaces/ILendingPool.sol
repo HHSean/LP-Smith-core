@@ -120,4 +120,6 @@ interface ILendingPool {
         uint256 amount,
         address onBehalfOf
     ) external returns (uint256);
+
+    function requestFund(address asset, uint256 amount) external;
 }

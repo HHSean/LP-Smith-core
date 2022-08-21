@@ -15,6 +15,8 @@ contract LendingPool is ILendingPool {
     mapping(address => address) smTokenMap; // left-hand: underlying token; right-hand: cd Token address
     mapping(address => ISmLpToken[]) smLpTokenListPerAsset; // smLpToken list of certain asset
 
+    mapping(address => uint256) assetLockedPerCdToken;
+
     modifier onlySmLpToken(address asset) {
         ISmLpToken[] storage smLpTokenList = smLpTokenListPerAsset[asset];
         uint256 length = smLpTokenList.length;
@@ -182,5 +184,12 @@ contract LendingPool is ILendingPool {
     function requestFund(address asset, uint256 amount)
         external
         onlySmLpToken(asset)
-    {}
+    {
+        require(
+            assetLockedPerCdToken[smTokenMap[asset]] > amount,
+            "Not enough fund to pass"
+        );
+        IERC20(asset).transferFrom(smTokenMap[asset], msg.sender, amount);
+        assetLockedPerCdToken[smTokenMap[asset]] -= amount;
+    }
 }
