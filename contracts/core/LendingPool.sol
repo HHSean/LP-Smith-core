@@ -186,16 +186,13 @@ contract LendingPool is ILendingPool, LendingPoolStorage {
         address lpTokenAddress,
         uint256 amount // lp token qty (not sm lp token)
     ) external override returns (uint256) {
-        // TODO check if it's withdrawable
-        // TODO get deposit value of user
-
-        // TODO get borrow value of user
-
         address smLpTokenAddress = address(smLpTokenMap[lpTokenAddress]);
-        // TODO burn smLpToken
         ISmLpToken(smLpTokenAddress).burn(msg.sender, amount);
-        // TODO transfer token X, token Y to smLpToken
-        // TODO burn smLpToken (mint LP token is held here)
+
+        require(
+            getBorrowableValue(msg.sender) > getBorrowedValue(msg.sender),
+            "LP token not withdrawable"
+        );
     }
 
     /**
