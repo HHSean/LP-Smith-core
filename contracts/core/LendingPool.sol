@@ -2,20 +2,20 @@ pragma solidity ^0.8.9;
 
 import {ILendingPool} from "./interfaces/ILendingPool.sol";
 import {ISmLpToken} from "./interfaces/ISmLpToken.sol";
+import {ISmToken} from "./interfaces/ISmToken.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IFactory} from "./interfaces/IFactory.sol";
+import {LendingPoolStorage} from "./LendingPoolStorage.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
 // TODO Noah
-contract LendingPool is ILendingPool {
+contract LendingPool is ILendingPool, LendingPoolStorage {
     using SafeMath for uint256;
 
     // mapping(address => address) cdTokenMap; // CD: Certificate of Deposit; left-hand: underlying token; right-hand: cd Token address
     mapping(address => address) smLpTokenMap; // left-hand: underlying token; right-hand: cd Token address
     mapping(address => address) smTokenMap; // left-hand: underlying token; right-hand: cd Token address
     mapping(address => ISmLpToken[]) smLpTokenListPerAsset; // smLpToken list of certain asset
-
-    mapping(address => uint256) assetLockedPerCdToken;
 
     modifier onlySmLpToken(address asset) {
         ISmLpToken[] storage smLpTokenList = smLpTokenListPerAsset[asset];
@@ -114,16 +114,61 @@ contract LendingPool is ILendingPool {
         address lpTokenAddress,
         uint256 amount // lp token qty
     ) external override {
-        // TODO transfer lpToken from msg.sender to smLpTokenAddress
         address smLpTokenAddress = address(smLpTokenMap[lpTokenAddress]);
+        // transfer lpToken from msg.sender to smLpTokenAddress
         IERC20(lpTokenAddress).transferFrom(
             msg.sender,
             smLpTokenAddress,
             amount
         );
-        // TODO call smLpToken to mint token (disperse LP token is held here)
-        ISmLpToken(smLpTokenAddress).mint(msg.sender, amount);
-        // TODO transfer token X, token Y to lending pools here
+        // call smLpToken to mint token (disperse LP token is held here)
+        (uint256 amountX, uint256 amountY, bool isFirstDeposit) = ISmLpToken(
+            smLpTokenAddress
+        ).mint(msg.sender, amount);
+        if (isFirstDeposit) {
+            smLpTokenDepositListPerUser[msg.sender].push(smLpTokenAddress); // TODO check this... If I can push user like this
+        }
+
+        address tokenX = ISmLpToken(smLpTokenAddress).tokenX();
+        address tokenY = ISmLpToken(smLpTokenAddress).tokenY();
+
+        _transferUnderlyingToSmToken(tokenX, amountX);
+        _transferUnderlyingToSmToken(tokenY, amountY);
+    }
+
+    function _transferUnderlyingToSmToken(address token, uint256 amount)
+        private
+    {
+        address smToken = smTokenMap[token];
+        IERC20(token).transfer(smToken, amount);
+        ReserveData storage reserve = _reserves[smToken];
+        reserve.depositedAmount += amount;
+    }
+
+    function getDepositedLpValue(address user)
+        public
+        returns (uint256 _depositValue)
+    {
+        // TODO
+        address[] storage smLpTokenList = smLpTokenDepositListPerUser[user];
+        uint256 length = smLpTokenList.length;
+        for (uint i = 0; i < length; i++) {
+            /*
+            (bool sign, uint256 pendingOnSale) = ISmLpToken(
+                smLpTokenList[i]
+            )*/
+        }
+    }
+
+    function getBorrowableValue(address user)
+        public
+        returns (uint256 _borrowableValue)
+    {
+        // TODO
+    }
+
+    function getBorrowedValue() public returns (uint256 _borrowedValue) {
+        // TODO
     }
 
     function withdrawERC20LpToken(
@@ -131,6 +176,9 @@ contract LendingPool is ILendingPool {
         uint256 amount // lp token qty (not sm lp token)
     ) external override returns (uint256) {
         // TODO check if it's withdrawable
+        // TODO get deposit value of user
+
+        // TODO get borrow value of user
 
         address smLpTokenAddress = address(smLpTokenMap[lpTokenAddress]);
         // TODO burn smLpToken
@@ -187,11 +235,13 @@ contract LendingPool is ILendingPool {
         external
         onlySmLpToken(asset)
     {
+        address smTokenAddress = smTokenMap[asset];
+        ReserveData storage reserve = _reserves[smTokenAddress];
         require(
-            assetLockedPerCdToken[smTokenMap[asset]] > amount,
+            reserve.depositedAmount.sub(reserve.borrowedAmount) > amount,
             "Not enough fund to pass"
         );
-        IERC20(asset).transferFrom(smTokenMap[asset], msg.sender, amount);
-        assetLockedPerCdToken[smTokenMap[asset]] -= amount;
+        IERC20(asset).transferFrom(smTokenAddress, msg.sender, amount);
+        reserve.depositedAmount -= amount;
     }
 }
