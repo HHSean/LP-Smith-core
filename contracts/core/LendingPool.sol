@@ -115,7 +115,14 @@ contract LendingPool is ILendingPool {
         uint256 amount // lp token qty
     ) external override {
         // TODO transfer lpToken from msg.sender to smLpTokenAddress
+        address smLpTokenAddress = address(smLpTokenMap[lpTokenAddress]);
+        IERC20(lpTokenAddress).transferFrom(
+            msg.sender,
+            smLpTokenAddress,
+            amount
+        );
         // TODO call smLpToken to mint token (disperse LP token is held here)
+        ISmLpToken(smLpTokenAddress).mint(msg.sender, amount);
         // TODO transfer token X, token Y to lending pools here
     }
 
@@ -123,8 +130,11 @@ contract LendingPool is ILendingPool {
         address lpTokenAddress,
         uint256 amount // lp token qty (not sm lp token)
     ) external override returns (uint256) {
-        // TODO get how much LP tokens should be minted(consider total LP token # - unrealised LP token #)
-        // TODO get how much tokens are needed to mint that much LP token
+        // TODO check if it's withdrawable
+
+        address smLpTokenAddress = address(smLpTokenMap[lpTokenAddress]);
+        // TODO burn smLpToken
+        ISmLpToken(smLpTokenAddress).burn(msg.sender, amount);
         // TODO transfer token X, token Y to smLpToken
         // TODO burn smLpToken (mint LP token is held here)
     }
