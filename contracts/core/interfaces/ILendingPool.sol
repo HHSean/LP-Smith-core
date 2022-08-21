@@ -7,6 +7,22 @@ interface ILendingPool {
     function getLpDebts(address asset) external view returns (uint256 _debt);
 
     /**
+     * @param asset The address of the ERC20 asset
+     **/
+    function getPotentialOnSale(address asset)
+        external
+        view
+        returns (bool _sign, uint256 _potentialOnSale);
+
+    /**
+     * @param asset The address of the ERC20 asset
+     **/
+    function getPendingOnSale(address asset)
+        external
+        view
+        returns (bool _sign, uint256 _pendingOnSale);
+
+    /**
      * @dev Deposits an `amount` of lp token into the reserve, receiving in return overlying smTokens.
      * - E.g. User deposits 100 USDC/ETH and gets in return 100 smUSDC
      * @param asset The address of the underlying asset to deposit

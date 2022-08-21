@@ -1,11 +1,20 @@
 pragma solidity ^0.8.9;
 
 interface ISmLpToken {
-    function debt(address tokenAddress) external view;
+    function getDebt(address tokenAddress)
+        external
+        view
+        returns (uint256 _debt);
 
-    function potentialOnSale(address tokenAddress) external view;
+    function getPotentialOnSale(address asset)
+        external
+        view
+        returns (bool sign, uint256 _potentialOnSale);
 
-    function pendingOnSale(address tokenAddress) external view;
+    function getPendingOnSale(address asset)
+        external
+        view
+        returns (bool sign, uint256 _pendingOnSale);
 
     function getPositionValue(address user) external view;
 

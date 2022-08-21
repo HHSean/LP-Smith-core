@@ -3,11 +3,15 @@ pragma solidity ^0.8.9;
 import {ILendingPool} from "./interfaces/ILendingPool.sol";
 import {ISmLpToken} from "./interfaces/ISmLpToken.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
 // TODO Noah
 contract LendingPool is ILendingPool {
+    using SafeMath for uint256;
+
     ISmLpToken[] smLpTokens;
-    mapping(address => address) smLpTokenAddresses;
+    mapping(address => address) smLpTokenMap;
+    mapping(address => ISmLpToken[]) smLpTokenListPerAsset;
 
     function getLpDebts(address asset)
         external
@@ -15,7 +19,78 @@ contract LendingPool is ILendingPool {
         override
         returns (uint256 _debt)
     {
-        // TODO iterate smLpTokens and aggregate total debt
+        // iterate smLpTokens and aggregate total debt
+        ISmLpToken[] storage smLpTokenList = smLpTokenListPerAsset[asset];
+        uint256 length = smLpTokenList.length;
+        for (uint i = 0; i < length; i++) {
+            _debt += ISmLpToken(address(smLpTokenList[i])).getDebt(asset);
+        }
+    }
+
+    function getPotentialOnSale(address asset)
+        external
+        view
+        returns (bool _sign, uint256 _potentialOnSale)
+    {
+        // iterate smLpTokens and sum up potential on sale
+        ISmLpToken[] storage smLpTokenList = smLpTokenListPerAsset[asset];
+        uint256 length = smLpTokenList.length;
+        uint256 positivePotentialOnSale;
+        uint256 negativePotentialOnSale;
+        for (uint i = 0; i < length; i++) {
+            (bool sign, uint256 potentialOnSale) = ISmLpToken(
+                address(smLpTokenList[i])
+            ).getPotentialOnSale(asset);
+            if (sign == true) {
+                positivePotentialOnSale += potentialOnSale;
+            } else {
+                negativePotentialOnSale += potentialOnSale;
+            }
+        }
+        if (positivePotentialOnSale >= negativePotentialOnSale) {
+            // positive sign
+            _potentialOnSale = positivePotentialOnSale.sub(
+                negativePotentialOnSale
+            );
+            _sign = true;
+        } else {
+            // negative sign
+            _potentialOnSale = negativePotentialOnSale.sub(
+                positivePotentialOnSale
+            );
+            _sign = false;
+        }
+    }
+
+    function getPendingOnSale(address asset)
+        external
+        view
+        returns (bool _sign, uint256 _pendingOnSale)
+    {
+        // iterate smLpTokens and sum up potential on sale
+        ISmLpToken[] storage smLpTokenList = smLpTokenListPerAsset[asset];
+        uint256 length = smLpTokenList.length;
+        uint256 positivePendingOnSale;
+        uint256 negativePendingOnSale;
+        for (uint i = 0; i < length; i++) {
+            (bool sign, uint256 pendingOnSale) = ISmLpToken(
+                address(smLpTokenList[i])
+            ).getPendingOnSale(asset);
+            if (sign == true) {
+                positivePendingOnSale += pendingOnSale;
+            } else {
+                negativePendingOnSale += pendingOnSale;
+            }
+        }
+        if (positivePendingOnSale >= negativePendingOnSale) {
+            // positive sign
+            _pendingOnSale = positivePendingOnSale.sub(negativePendingOnSale);
+            _sign = true;
+        } else {
+            // negative sign
+            _pendingOnSale = negativePendingOnSale.sub(positivePendingOnSale);
+            _sign = false;
+        }
     }
 
     function depositERC20LpToken(

@@ -149,19 +149,30 @@ contract QuickSwapSmToken is ISmLpToken, IERC20, Ownable {
         returns (bool)
     {}
 
-    function debt(address tokenAddress) external view override {
-        // TODO
-    }
-
-    function potentialOnSale(address tokenAddress) external view override {
-        // TODO
-    }
-
-    function pendingOnSale(address tokenAddress) external view override {
+    function getDebt(address tokenAddress)
+        external
+        view
+        override
+        returns (uint256 _debt)
+    {
         // TODO
     }
 
     function getPositionValue(address user) external view override {
         // TODO
     }
+
+    function getPotentialOnSale(address asset)
+        external
+        view
+        override
+        returns (bool sign, uint256 _potentialOnSale)
+    {}
+
+    function getPendingOnSale(address asset)
+        external
+        view
+        override
+        returns (bool sign, uint256 _pendingOnSale)
+    {}
 }
