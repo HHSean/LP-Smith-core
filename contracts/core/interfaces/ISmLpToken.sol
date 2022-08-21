@@ -18,6 +18,8 @@ interface ISmLpToken is IERC20 {
         view
         returns (bool _isPositive, uint256 _pendingOnSale);
 
+    function decreasePendingOnSale(address asset, uint256 saledAmount) external;
+
     function getDepositValue(address user) external view returns (uint256);
 
     function getBorrowableValue(address user) external view returns (uint256);

@@ -207,6 +207,62 @@ contract QuickSwapSmLpToken is ISmLpToken, ERC20, Ownable {
         _burn(address(this), amount);
     }
 
+    function realizeLp(
+        address user,
+        uint256 amount // LP token
+    ) external onlyLendingPool returns (bool _isCloseAll) {
+        require(amount <= balanceOf(address(this)), "Insufficient smLpToken");
+        require(
+            amount <=
+                userStatus[user].totalLpToken.sub(
+                    userStatus[user].realizedLpToken
+                ),
+            "Exceed Amount"
+        );
+
+        (
+            uint256 _amountX,
+            uint256 _amountY,
+            uint256 _mintedAmount
+        ) = _addLiquidity(amount);
+
+        uint256 _reducedX = userStatus[user].initX.mul(amount).div(
+            userStatus[user].totalLpToken
+        );
+        uint256 _reducedY = userStatus[user].initY.mul(amount).div(
+            userStatus[user].totalLpToken
+        );
+
+        if (_amountX < _reducedX) {
+            (pendingOnSaleXSign, pendingOnSaleX) = UnsignedCalc
+                .calculateUnsignedAdd(
+                    pendingOnSaleXSign,
+                    pendingOnSaleX,
+                    true,
+                    _reducedX.sub(_amountX)
+                );
+        }
+        if (_amountY < _reducedY) {
+            (pendingOnSaleYSign, pendingOnSaleY) = UnsignedCalc
+                .calculateUnsignedAdd(
+                    pendingOnSaleXSign,
+                    pendingOnSaleX,
+                    true,
+                    _reducedY.sub(_amountY)
+                );
+        }
+
+        userStatus[user].realizedLpToken = userStatus[user].realizedLpToken.add(
+            amount
+        );
+        userStatus[user].initX = userStatus[user].initX.sub(_reducedX);
+        userStatus[user].initY = userStatus[user].initY.sub(_reducedY);
+
+        totalStatus.initX = totalStatus.initX.sub(_reducedX);
+        totalStatus.initY = totalStatus.initY.sub(_reducedY);
+        totalStatus.realizedLpToken = totalStatus.realizedLpToken.add(amount);
+    }
+
     function _addLiquidity(uint256 liquidity)
         internal
         returns (
@@ -329,7 +385,7 @@ contract QuickSwapSmLpToken is ISmLpToken, ERC20, Ownable {
     }
 
     function getPotentialOnSale(address asset)
-        external
+        public
         view
         returns (bool _isPositive, uint256 _potentialOnSale)
     {
@@ -355,9 +411,8 @@ contract QuickSwapSmLpToken is ISmLpToken, ERC20, Ownable {
     }
 
     function getPendingOnSale(address asset)
-        external
+        public
         view
-        override
         returns (bool _isPositive, uint256 _pendingOnSale)
     {
         require(asset == tokenX || asset == tokenY, "Invalid Token Address");
@@ -367,6 +422,30 @@ contract QuickSwapSmLpToken is ISmLpToken, ERC20, Ownable {
         } else {
             _isPositive = pendingOnSaleYSign;
             _pendingOnSale = pendingOnSaleY;
+        }
+    }
+
+    function decreasePendingOnSale(address asset, uint256 saledAmount)
+        public
+        onlyLendingPool
+    {
+        require(asset == tokenX || asset == tokenY, "Invalid Token Address");
+        if (asset == tokenX) {
+            (pendingOnSaleXSign, pendingOnSaleX) = UnsignedCalc
+                .calculateUnsignedSub(
+                    pendingOnSaleXSign,
+                    pendingOnSaleX,
+                    true,
+                    saledAmount
+                );
+        } else {
+            (pendingOnSaleYSign, pendingOnSaleY) = UnsignedCalc
+                .calculateUnsignedSub(
+                    pendingOnSaleYSign,
+                    pendingOnSaleY,
+                    true,
+                    saledAmount
+                );
         }
     }
 
