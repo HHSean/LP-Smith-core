@@ -26,9 +26,15 @@ interface ISmLpToken is IERC20 {
 
     function mint(address user, uint256 amount)
         external
-        returns (uint256 _amountX, uint256 _amountY, bool _isFirstDeposit);
+        returns (
+            uint256 _amountX,
+            uint256 _amountY,
+            bool _isFirstDeposit
+        );
 
-    function burn(address user, uint256 amount, bool _isCloseAll) external;
+    function burn(address user, uint256 amount)
+        external
+        returns (bool _isCloseAll);
 
     /**
      * @dev Returns the address of the underlying asset of this smToken (E.g. WETH for smWETH)

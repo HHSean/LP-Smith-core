@@ -42,9 +42,15 @@ contract QuickSwapStrategy is IStrategy, Ownable {
             uint liquidity
         )
     {
-        require(amountX <= IERC20(tokenX).balanceOf(msg.sender)), "Insufficient TokenX");
-        require(amountY <= IERC20(tokenY).balanceOf(msg.sender)), "Insufficient TokenY");
-        
+        require(
+            _amountADesired <= IERC20(_tokenA).balanceOf(msg.sender),
+            "Insufficient TokenX"
+        );
+        require(
+            _amountBDesired <= IERC20(_tokenB).balanceOf(msg.sender),
+            "Insufficient TokenY"
+        );
+
         IERC20(_tokenA).transferFrom(
             msg.sender,
             address(this),
@@ -88,9 +94,16 @@ contract QuickSwapStrategy is IStrategy, Ownable {
         address recipient,
         uint liquidity
     ) external returns (uint amountA, uint amountB) {
-        require(liquidity <= IERC20(liquidityToken).balanceOf(msg.sender)), "Insufficient Liquidity");
-        
-        IERC20(liquidityToken).transferFrom(msg.sender, address(this), liquidity);
+        require(
+            liquidity <= IERC20(liquidityToken).balanceOf(msg.sender),
+            "Insufficient Liquidity"
+        );
+
+        IERC20(liquidityToken).transferFrom(
+            msg.sender,
+            address(this),
+            liquidity
+        );
 
         IERC20(liquidityToken).approve(
             QUICK_SWAP_ROUTER_02_ADDRESS_IN_POLYGON_MAINNET,
@@ -140,4 +153,26 @@ contract QuickSwapStrategy is IStrategy, Ownable {
         }
         require(liquidity > 0, "UniswapV2: INSUFFICIENT_LIQUIDITY_MINTED");
     }
+/*
+    function getInputAmountsForLpToken(
+        address lpTokenAddress,
+        uint outputAmount
+    ) public view returns (uint _amountA, uint _amountB) {
+        uint liquidityTokenTotalSupply = IUniswapV2Pair(_liquidityToken)
+            .totalSupply();
+        (uint112 _reserve0, uint112 _reserve1, ) = IUniswapV2Pair(
+            _liquidityToken
+        ).getReserves();
+
+        if (liquidityTokenTotalSupply == 0) {
+            liquidity = Math.sqrt(_amountADesired.mul(_amountBDesired)).sub(
+                MINIMUM_LIQUIDITY
+            );
+        } else {
+            liquidity = Math.min(
+                _amountADesired.mul(liquidityTokenTotalSupply) / _reserve0,
+                _amountBDesired.mul(liquidityTokenTotalSupply) / _reserve1
+            );
+        }
+    }*/
 }

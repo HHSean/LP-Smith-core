@@ -145,7 +145,11 @@ contract QuickSwapSmLpToken is ISmLpToken, ERC20, Ownable {
         returns (uint256 _amountX, uint256 _amountY)
     {}
 
-    function _addLiquidity(uint256 amountX, uint256 amountY)
+    function _addLiquidity(
+        uint256 amountX,
+        uint256 amountY,
+        uint256 liquidity
+    )
         internal
         returns (
             uint256 _amountX,
@@ -166,18 +170,12 @@ contract QuickSwapSmLpToken is ISmLpToken, ERC20, Ownable {
         IERC20(tokenY).approve(STRATEGY_CONTRACT_ADDRESS, amountY);
 
         (_amountX, _amountY, _liquidity) = IStrategy(STRATEGY_CONTRACT_ADDRESS)
-            .burn(
-                tokenX,
-                tokenY,
-                UNDERLYING_ASSET_ADDRESS,
-                address(this),
-                liquidity
-            );
+            .mint(tokenX, tokenY, amountX, amountY, address(this));
     }
 
     function _removeLiquidity(uint256 liquidity)
         internal
-        returns (uint amountX, uint amountY)
+        returns (uint _amountX, uint _amountY)
     {
         require(
             liquidity <=
