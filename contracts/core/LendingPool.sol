@@ -1,12 +1,14 @@
 pragma solidity ^0.8.9;
 
 import {ILendingPool} from "./interfaces/ILendingPool.sol";
+import {IPriceOracle} from "./interfaces/IPriceOracle.sol";
 import {ISmLpToken} from "./interfaces/ISmLpToken.sol";
 import {ISmToken} from "./interfaces/ISmToken.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IFactory} from "./interfaces/IFactory.sol";
+import {GeneralLogic} from "./libraries/GeneralLogic.sol";
 import {LendingPoolStorage} from "./LendingPoolStorage.sol";
-import "@openzeppelin/contracts/utils/math/SafeMath.sol";
+import {SafeMath} from "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
 // TODO Noah
 contract LendingPool is ILendingPool, LendingPoolStorage {
@@ -16,6 +18,7 @@ contract LendingPool is ILendingPool, LendingPoolStorage {
     mapping(address => address) smLpTokenMap; // left-hand: underlying token; right-hand: cd Token address
     mapping(address => address) smTokenMap; // left-hand: underlying token; right-hand: cd Token address
     mapping(address => ISmLpToken[]) smLpTokenListPerAsset; // smLpToken list of certain asset
+    address public factory;
 
     modifier onlySmLpToken(address asset) {
         ISmLpToken[] storage smLpTokenList = smLpTokenListPerAsset[asset];
@@ -130,19 +133,10 @@ contract LendingPool is ILendingPool, LendingPoolStorage {
         }
 
         address tokenX = ISmLpToken(smLpTokenAddress).tokenX();
+        _transferUnderlyingToSmToken(tokenX, smLpTokenAddress, amountX);
+
         address tokenY = ISmLpToken(smLpTokenAddress).tokenY();
-
-        _transferUnderlyingToSmToken(tokenX, amountX);
-        _transferUnderlyingToSmToken(tokenY, amountY);
-    }
-
-    function _transferUnderlyingToSmToken(address token, uint256 amount)
-        private
-    {
-        address smToken = smTokenMap[token];
-        IERC20(token).transfer(smToken, amount);
-        ReserveData storage reserve = _reserves[smToken];
-        reserve.depositedAmount += amount;
+        _transferUnderlyingToSmToken(tokenY, smLpTokenAddress, amountY);
     }
 
     function getDepositedLpValue(address user)
@@ -167,8 +161,25 @@ contract LendingPool is ILendingPool, LendingPoolStorage {
         // TODO
     }
 
-    function getBorrowedValue() public returns (uint256 _borrowedValue) {
-        // TODO
+    function getBorrowedValue(address user)
+        public
+        view
+        returns (uint256 _borrowedValue)
+    {
+        IPriceOracle priceOracle = IPriceOracle(
+            IFactory(factory).getPriceOracle()
+        );
+        address[] storage borrowList = reserveBorrowListPerUser[user];
+        uint256 length = borrowList.length;
+        for (uint256 i = 0; i < length; i++) {
+            address asset = borrowList[i];
+            uint256 price = priceOracle.getAssetPrice(asset);
+            _borrowedValue += GeneralLogic.getUnderlyingValue(
+                uint248(_userDebtDatas[asset][user].borrowedAmount),
+                _reserves[asset].reserveDecimals,
+                price
+            );
+        }
     }
 
     function withdrawERC20LpToken(
@@ -195,6 +206,7 @@ contract LendingPool is ILendingPool, LendingPoolStorage {
         uint256 amount // asset unit
     ) external override {
         // TODO transfer asset to smToken
+        //IERC20(asset).transferFrom();
         // TODO mint smToken -> debt calculation held inside here (to get smToken exchage rate)
     }
 
@@ -235,13 +247,32 @@ contract LendingPool is ILendingPool, LendingPoolStorage {
         external
         onlySmLpToken(asset)
     {
+        _transferUnderlyingFromSmToken(asset, msg.sender, amount);
+    }
+
+    function _transferUnderlyingToSmToken(
+        address asset,
+        address from,
+        uint256 amount
+    ) private {
+        address smToken = smTokenMap[asset];
+        IERC20(asset).transfer(smToken, amount);
+        ReserveData storage reserve = _reserves[smToken];
+        reserve.depositedAmount += amount;
+    }
+
+    function _transferUnderlyingFromSmToken(
+        address asset,
+        address to,
+        uint256 amount
+    ) private {
         address smTokenAddress = smTokenMap[asset];
         ReserveData storage reserve = _reserves[smTokenAddress];
         require(
             reserve.depositedAmount.sub(reserve.borrowedAmount) > amount,
             "Not enough fund to pass"
         );
-        IERC20(asset).transferFrom(smTokenAddress, msg.sender, amount);
+        IERC20(asset).transferFrom(smTokenAddress, to, amount);
         reserve.depositedAmount -= amount;
     }
 }

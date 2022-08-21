@@ -7,6 +7,7 @@ contract LendingPoolStorage {
         uint256 borrowedAmount;
         address smTokenAddress;
         address reserveAddress;
+        uint8 reserveDecimals;
         uint8 id;
     }
 
@@ -24,5 +25,5 @@ contract LendingPoolStorage {
 
     mapping(address => address[]) smLpTokenDepositListPerUser;
     mapping(address => address[]) smTokenDepositListPerUser;
-    mapping(address => address[]) smTokenBorrowListPerUser;
+    mapping(address => address[]) reserveBorrowListPerUser;
 }
