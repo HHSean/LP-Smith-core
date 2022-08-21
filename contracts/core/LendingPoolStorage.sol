@@ -3,8 +3,9 @@ pragma solidity ^0.8.9;
 contract LendingPoolStorage {
     // ERC20
     struct ReserveData {
-        uint256 depositedAmount;
-        uint256 borrowedAmount;
+        uint256 depositAmount;
+        uint256 availAmount;
+        uint256 borrowAmount;
         address smTokenAddress;
         address reserveAddress;
         uint8 reserveDecimals;
@@ -16,14 +17,12 @@ contract LendingPoolStorage {
     // ERC20
     struct UserDebtData {
         uint256 borrowedAmount;
-        address user;
-        uint8 id;
+        bool wasBorrowed;
     }
 
     mapping(address => mapping(address => UserDebtData))
         internal _userDebtDatas; // reserve => user => user debt data
 
-    mapping(address => address[]) smLpTokenDepositListPerUser;
-    mapping(address => address[]) smTokenDepositListPerUser;
-    mapping(address => address[]) reserveBorrowListPerUser;
+    mapping(address => address[]) internal smLpTokenDepositListPerUser;
+    mapping(address => address[]) internal reserveBorrowListPerUser;
 }

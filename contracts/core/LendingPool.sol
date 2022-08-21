@@ -33,6 +33,14 @@ contract LendingPool is ILendingPool, LendingPoolStorage {
         _;
     }
 
+    modifier validWithdrawal() {
+        _;
+        require(
+            getBorrowableValue(msg.sender) > getBorrowedValue(msg.sender),
+            "LP token not withdrawable"
+        );
+    }
+
     function getLpDebts(address asset)
         external
         view
@@ -133,10 +141,10 @@ contract LendingPool is ILendingPool, LendingPoolStorage {
         }
 
         address tokenX = ISmLpToken(smLpTokenAddress).tokenX();
-        _transferUnderlyingToSmToken(tokenX, smLpTokenAddress, amountX);
+        _transferReserveToSmToken(tokenX, smLpTokenAddress, amountX, true);
 
         address tokenY = ISmLpToken(smLpTokenAddress).tokenY();
-        _transferUnderlyingToSmToken(tokenY, smLpTokenAddress, amountY);
+        _transferReserveToSmToken(tokenY, smLpTokenAddress, amountY, true);
     }
 
     function getDepositedLpValue(address user)
@@ -185,14 +193,9 @@ contract LendingPool is ILendingPool, LendingPoolStorage {
     function withdrawERC20LpToken(
         address lpTokenAddress,
         uint256 amount // lp token qty (not sm lp token)
-    ) external override returns (uint256) {
+    ) external override validWithdrawal returns (uint256) {
         address smLpTokenAddress = address(smLpTokenMap[lpTokenAddress]);
         ISmLpToken(smLpTokenAddress).burn(msg.sender, amount);
-
-        require(
-            getBorrowableValue(msg.sender) > getBorrowedValue(msg.sender),
-            "LP token not withdrawable"
-        );
     }
 
     /**
@@ -202,8 +205,8 @@ contract LendingPool is ILendingPool, LendingPoolStorage {
         address asset,
         uint256 amount // asset unit
     ) external override {
-        // TODO transfer asset to smToken
-        //IERC20(asset).transferFrom();
+        // transfer asset to smToken
+        _transferReserveToSmToken(asset, msg.sender, amount, true);
         // TODO mint smToken -> debt calculation held inside here (to get smToken exchage rate)
     }
 
@@ -213,19 +216,27 @@ contract LendingPool is ILendingPool, LendingPoolStorage {
     function withdraw(
         address asset,
         uint256 amount // asset unit (not smToken unit)
-    ) external override returns (uint256) {
+    ) external override validWithdrawal returns (uint256) {
         // TODO burn smToken -> debt calculation held inside here (to get smToken exchange rate)
-        // TODO transfer asset from smToken to "to"
+        // transfer asset from smToken to "to"
+        _transferReserveFromSmToken(asset, msg.sender, amount, true);
     }
 
     /**
      * protocol erc20 borrow
      */
-    function borrow(address asset, uint256 amount) external override {
-        // TODO 1. validate if user can borrow asset
-        // TODO 1-1. should calculate user's deposit value
-        // TODO 1-2. make sure it doesn't exceed liquidation threshold
-        // TODO 2. transfer asset to user and update borrowed amount
+    function borrow(address asset, uint256 amount)
+        external
+        override
+        validWithdrawal
+    {
+        _transferReserveFromSmToken(asset, msg.sender, amount, false);
+        UserDebtData storage debtData = _userDebtDatas[asset][msg.sender];
+        if (!debtData.wasBorrowed) {
+            debtData.wasBorrowed = true;
+            reserveBorrowListPerUser[msg.sender].push(asset);
+        }
+        debtData.borrowedAmount += amount;
     }
 
     /**
@@ -236,40 +247,55 @@ contract LendingPool is ILendingPool, LendingPoolStorage {
         override
         returns (uint256)
     {
-        // TODO transfer asset to smToken
-        // TODO update borrowed amount of user
+        // transfer asset to smToken
+        _transferReserveToSmToken(asset, msg.sender, amount, false);
+        // update borrowed amount of user
+        _userDebtDatas[asset][msg.sender].borrowedAmount -= amount;
     }
 
     function requestFund(address asset, uint256 amount)
         external
         onlySmLpToken(asset)
     {
-        _transferUnderlyingFromSmToken(asset, msg.sender, amount);
+        _transferReserveFromSmToken(asset, msg.sender, amount, true);
     }
 
-    function _transferUnderlyingToSmToken(
+    function _transferReserveToSmToken(
         address asset,
         address from,
-        uint256 amount
+        uint256 amount,
+        bool isDeposit
     ) private {
         address smToken = smTokenMap[asset];
-        IERC20(asset).transfer(smToken, amount);
+        require(
+            IERC20(asset).balanceOf(from) > amount,
+            "Not enough fund to pass"
+        );
+        IERC20(asset).transferFrom(from, smToken, amount);
         ReserveData storage reserve = _reserves[smToken];
-        reserve.depositedAmount += amount;
+        reserve.availAmount += amount;
+        if (isDeposit) {
+            reserve.depositAmount += amount;
+        } else {
+            reserve.borrowAmount -= amount;
+        }
     }
 
-    function _transferUnderlyingFromSmToken(
+    function _transferReserveFromSmToken(
         address asset,
         address to,
-        uint256 amount
+        uint256 amount,
+        bool isWithdraw
     ) private {
         address smTokenAddress = smTokenMap[asset];
         ReserveData storage reserve = _reserves[smTokenAddress];
-        require(
-            reserve.depositedAmount.sub(reserve.borrowedAmount) > amount,
-            "Not enough fund to pass"
-        );
+        require(reserve.availAmount > amount, "Not enough fund to pass");
         IERC20(asset).transferFrom(smTokenAddress, to, amount);
-        reserve.depositedAmount -= amount;
+        reserve.availAmount -= amount;
+        if (isWithdraw) {
+            reserve.depositAmount -= amount;
+        } else {
+            reserve.borrowAmount += amount;
+        }
     }
 }
