@@ -13,13 +13,13 @@ import "@openzeppelin/contracts/utils/math/Math.sol";
 // TODO Evan
 // TODO: need to use modifier
 contract QuickSwapStrategy is IStrategy, Ownable {
-    using SafeMath for uint;
+    using SafeMath for uint256;
 
     address public QUICK_SWAP_ROUTER_02_ADDRESS_IN_POLYGON_MAINNET;
 
     IUniswapV2Router02 uniswapV2Router02;
 
-    uint public constant MINIMUM_LIQUIDITY = 10**3;
+    uint256 public constant MINIMUM_LIQUIDITY = 10**3;
 
     constructor(address _QUICK_SWAP_ROUTER_02_ADDRESS_IN_POLYGON_MAINNET) {
         QUICK_SWAP_ROUTER_02_ADDRESS_IN_POLYGON_MAINNET = _QUICK_SWAP_ROUTER_02_ADDRESS_IN_POLYGON_MAINNET;
@@ -31,15 +31,15 @@ contract QuickSwapStrategy is IStrategy, Ownable {
     function mint(
         address _tokenA,
         address _tokenB,
-        uint _amountADesired,
-        uint _amountBDesired,
+        uint256 _amountADesired,
+        uint256 _amountBDesired,
         address recipient
     )
         external
         returns (
-            uint amountA,
-            uint amountB,
-            uint liquidity
+            uint256 amountA,
+            uint256 amountB,
+            uint256 liquidity
         )
     {
         require(
@@ -87,42 +87,109 @@ contract QuickSwapStrategy is IStrategy, Ownable {
         emit Log("liquidity", liquidity);
     }
 
+    function mintWithETH(
+        address token,
+        uint256 amountTokenDesired,
+        uint256 amountTokenMin,
+        uint256 amountETHMin,
+        address to
+    )
+        public
+        payable
+        returns (
+            uint256 amountToken,
+            uint256 amountETH,
+            uint256 liquidity
+        )
+    {
+        IERC20(token).approve(
+            QUICK_SWAP_ROUTER_02_ADDRESS_IN_POLYGON_MAINNET,
+            amountTokenDesired
+        );
+
+        (amountToken, amountETH, liquidity) = uniswapV2Router02.addLiquidityETH{
+            value: msg.value
+        }(
+            token,
+            amountTokenDesired,
+            amountTokenMin,
+            amountETHMin,
+            to,
+            block.timestamp
+        );
+    }
+
     function burn(
         address _tokenA,
         address _tokenB,
-        address liquidityToken,
-        address recipient,
-        uint liquidity
-    ) external returns (uint amountA, uint amountB) {
+        address _liquidityToken,
+        address _recipient,
+        uint256 _liquidity
+    ) external returns (uint256 amountA, uint256 amountB) {
         require(
-            liquidity <= IERC20(liquidityToken).balanceOf(msg.sender),
+            _liquidity <= IERC20(_liquidityToken).balanceOf(msg.sender),
             "Insufficient Liquidity"
         );
 
-        IERC20(liquidityToken).transferFrom(
+        IERC20(_liquidityToken).transferFrom(
             msg.sender,
             address(this),
-            liquidity
+            _liquidity
         );
 
-        IERC20(liquidityToken).approve(
+        IERC20(_liquidityToken).approve(
             QUICK_SWAP_ROUTER_02_ADDRESS_IN_POLYGON_MAINNET,
-            liquidity
+            _liquidity
         );
 
         (amountA, amountB) = IUniswapV2Router02(uniswapV2Router02)
             .removeLiquidity(
                 _tokenA,
                 _tokenB,
-                liquidity,
+                _liquidity,
                 1,
                 1,
-                recipient,
+                _recipient,
                 block.timestamp
             );
 
         emit Log("amountA", amountA);
         emit Log("amountB", amountB);
+    }
+
+    function burnWithETH(
+        address _token,
+        address _liquidityToken,
+        uint256 _amountTokenMin,
+        uint256 _amountETHMin,
+        address _recipient,
+        uint256 _liquidity
+    ) external returns (uint256 amountToken, uint256 amountETH) {
+        require(
+            _liquidity <= IERC20(_liquidityToken).balanceOf(msg.sender),
+            "Insufficient Liquidity"
+        );
+
+        IERC20(_liquidityToken).transferFrom(
+            msg.sender,
+            address(this),
+            _liquidity
+        );
+
+        IERC20(_liquidityToken).approve(
+            QUICK_SWAP_ROUTER_02_ADDRESS_IN_POLYGON_MAINNET,
+            _liquidity
+        );
+
+        (amountToken, amountETH) = IUniswapV2Router02(uniswapV2Router02)
+            .removeLiquidityETH(
+                _token,
+                _liquidity,
+                1,
+                1,
+                _recipient,
+                block.timestamp
+            );
     }
 
     //TODO: add functions for add/remove liquidity with ETH
@@ -133,10 +200,10 @@ contract QuickSwapStrategy is IStrategy, Ownable {
 
     function getEstimatedLpTokenAmount(
         address _liquidityToken,
-        uint _amountADesired,
-        uint _amountBDesired
-    ) public view returns (uint liquidity) {
-        uint liquidityTokenTotalSupply = IUniswapV2Pair(_liquidityToken)
+        uint256 _amountADesired,
+        uint256 _amountBDesired
+    ) public view returns (uint256 liquidity) {
+        uint256 liquidityTokenTotalSupply = IUniswapV2Pair(_liquidityToken)
             .totalSupply();
         (uint112 _reserve0, uint112 _reserve1, ) = IUniswapV2Pair(
             _liquidityToken
@@ -156,9 +223,9 @@ contract QuickSwapStrategy is IStrategy, Ownable {
 
     function getInputAmountsForLpToken(
         address lpTokenAddress,
-        uint outputAmount
-    ) public view returns (uint _amountA, uint _amountB) {
-        uint liquidityTokenTotalSupply = IUniswapV2Pair(lpTokenAddress)
+        uint256 outputAmount
+    ) public view returns (uint256 _amountA, uint256 _amountB) {
+        uint256 liquidityTokenTotalSupply = IUniswapV2Pair(lpTokenAddress)
             .totalSupply();
         (uint112 _reserve0, uint112 _reserve1, ) = IUniswapV2Pair(
             lpTokenAddress
@@ -167,4 +234,6 @@ contract QuickSwapStrategy is IStrategy, Ownable {
         _amountA = outputAmount.mul(_reserve0).div(liquidityTokenTotalSupply);
         _amountB = outputAmount.mul(_reserve1).div(liquidityTokenTotalSupply);
     }
+
+    receive() external payable {}
 }
