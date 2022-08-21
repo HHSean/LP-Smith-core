@@ -42,6 +42,9 @@ contract QuickSwapStrategy is IStrategy, Ownable {
             uint liquidity
         )
     {
+        require(amountX <= IERC20(tokenX).balanceOf(msg.sender)), "Insufficient TokenX");
+        require(amountY <= IERC20(tokenY).balanceOf(msg.sender)), "Insufficient TokenY");
+        
         IERC20(_tokenA).transferFrom(
             msg.sender,
             address(this),
@@ -85,10 +88,9 @@ contract QuickSwapStrategy is IStrategy, Ownable {
         address recipient,
         uint liquidity
     ) external returns (uint amountA, uint amountB) {
-        require(
-            liquidity < IERC20(liquidityToken).balanceOf(address(this)),
-            "Insufficient Liquidity"
-        );
+        require(liquidity <= IERC20(liquidityToken).balanceOf(msg.sender)), "Insufficient Liquidity");
+        
+        IERC20(liquidityToken).transferFrom(msg.sender, address(this), liquidity);
 
         IERC20(liquidityToken).approve(
             QUICK_SWAP_ROUTER_02_ADDRESS_IN_POLYGON_MAINNET,

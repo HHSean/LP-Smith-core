@@ -101,10 +101,6 @@ contract QuickSwapSmLpToken is ISmLpToken, ERC20, Ownable {
         address user,
         uint256 amount // LP token
     ) external onlyLendingPool returns (uint256 _amountX, uint256 _amountY) {
-        require(
-            amount < IERC20(UNDERLYING_ASSET_ADDRESS).balanceOf(address(this)),
-            "Insufficient Liquidity"
-        );
         (_amountX, _amountY) = _beforeMint(amount);
 
         userStatus[user].totalLpToken = userStatus[user].totalLpToken.add(
@@ -115,6 +111,10 @@ contract QuickSwapSmLpToken is ISmLpToken, ERC20, Ownable {
             .add(amount);
         userStatus[user].initX = userStatus[user].initX.add(_amountX);
         userStatus[user].initY = userStatus[user].initY.add(_amountY);
+
+        totalInitX = totalInitX.add(_amountX);
+        totalInitY = totalInitY.add(_amountY);
+
         _mint(user, amount);
     }
 
@@ -130,9 +130,65 @@ contract QuickSwapSmLpToken is ISmLpToken, ERC20, Ownable {
         _burn(user, amount);
     }
 
-    function _addLiquidity() internal returns (uint liquidity) {}
+    function _beforeBurn(uint256 amount)
+        internal
+        returns (uint256 _amountX, uint256 _amountY)
+    {}
 
-    function _removeLiquidity() internal returns (uint amountX, uint amountY) {}
+    function _addLiquidity(uint256 amountX, uint256 amountY)
+        internal
+        returns (
+            uint256 _amountX,
+            uint256,
+            _amountY,
+            uint256 _liquidity
+        )
+    {
+        require(
+            amountX <= IERC20(tokenX).balanceOf(address(this)),
+            "Insufficient TokenX"
+        );
+        require(
+            amountY <= IERC20(tokenY).balanceOf(address(this)),
+            "Insufficient TokenY"
+        );
+
+        IERC20(tokenX).approve(STRATEGY_CONTRACT_ADDRESS, amountX);
+        IERC20(tokenY).approve(STRATEGY_CONTRACT_ADDRESS, amountY);
+
+        (_amountX, _amountY, _liquidity) = IStrategy(STRATEGY_CONTRACT_ADDRESS)
+            .burn(
+                tokenX,
+                tokenY,
+                LP_TOKEN_CONTRACT_ADDRESS,
+                address(this),
+                liquidity
+            );
+    }
+
+    function _removeLiquidity(uint256 liquidity)
+        internal
+        returns (uint amountX, uint amountY)
+    {
+        require(
+            liquidity <=
+                IERC20(LP_TOKEN_CONTRACT_ADDRESS).balanceOf(address(this)),
+            "Insufficient Liquidity"
+        );
+
+        IERC20(LP_TOKEN_CONTRACT_ADDRESS).approve(
+            STRATEGY_CONTRACT_ADDRESS,
+            liquidity
+        );
+
+        (_amountX, _amountY) = IStrategy(STRATEGY_CONTRACT_ADDRESS).burn(
+            tokenX,
+            tokenY,
+            LP_TOKEN_CONTRACT_ADDRESS,
+            address(this),
+            liquidity
+        );
+    }
 
     // Not needed, this contract doesn't have assets
     /*
@@ -180,18 +236,7 @@ contract QuickSwapSmLpToken is ISmLpToken, ERC20, Ownable {
         internal
         returns (uint256 _amountX, uint256 _amountY)
     {
-        IERC20(UNDERLYING_ASSET_ADDRESS).transfer(
-            STRATEGY_CONTRACT_ADDRESS,
-            liquidity
-        );
-
-        (_amountX, _amountY) = IStrategy(STRATEGY_CONTRACT_ADDRESS).burn(
-            tokenX,
-            tokenY,
-            UNDERLYING_ASSET_ADDRESS,
-            address(this),
-            liquidity
-        );
+        _removeLiquidity(liquidity);
 
         address lendingPoolAddress = IFactory(FACTORY_CONTRACT_ADDRESS)
             .getLendingPool();
