@@ -100,7 +100,15 @@ contract QuickSwapSmLpToken is ISmLpToken, ERC20, Ownable {
     function mint(
         address user,
         uint256 amount // LP token
-    ) external onlyLendingPool returns (uint256 _amountX, uint256 _amountY, bool _isFirstDeposit) {
+    )
+        external
+        onlyLendingPool
+        returns (
+            uint256 _amountX,
+            uint256 _amountY,
+            bool _isFirstDeposit
+        )
+    {
         (_amountX, _amountY) = _beforeMint(amount);
 
         _isFirstDeposit = userStatus[user].totalLpToken == 0 ? true : false;
@@ -123,7 +131,7 @@ contract QuickSwapSmLpToken is ISmLpToken, ERC20, Ownable {
     function burn(
         address user,
         uint256 amount // LP token
-    ) external onlyLendingPool returns(bool _isCloseAll){
+    ) external onlyLendingPool returns (bool _isCloseAll) {
         // TODO _beforeBurn() mints lp token. Recipient of lp token is smLpToken
         // TODO reduce initX, initY proportionally
         // TODO reduce unrealisedLpToken
@@ -141,8 +149,7 @@ contract QuickSwapSmLpToken is ISmLpToken, ERC20, Ownable {
         internal
         returns (
             uint256 _amountX,
-            uint256,
-            _amountY,
+            uint256 _amountY,
             uint256 _liquidity
         )
     {
@@ -162,7 +169,7 @@ contract QuickSwapSmLpToken is ISmLpToken, ERC20, Ownable {
             .burn(
                 tokenX,
                 tokenY,
-                LP_TOKEN_CONTRACT_ADDRESS,
+                UNDERLYING_ASSET_ADDRESS,
                 address(this),
                 liquidity
             );
@@ -174,11 +181,11 @@ contract QuickSwapSmLpToken is ISmLpToken, ERC20, Ownable {
     {
         require(
             liquidity <=
-                IERC20(LP_TOKEN_CONTRACT_ADDRESS).balanceOf(address(this)),
+                IERC20(UNDERLYING_ASSET_ADDRESS).balanceOf(address(this)),
             "Insufficient Liquidity"
         );
 
-        IERC20(LP_TOKEN_CONTRACT_ADDRESS).approve(
+        IERC20(UNDERLYING_ASSET_ADDRESS).approve(
             STRATEGY_CONTRACT_ADDRESS,
             liquidity
         );
@@ -186,7 +193,7 @@ contract QuickSwapSmLpToken is ISmLpToken, ERC20, Ownable {
         (_amountX, _amountY) = IStrategy(STRATEGY_CONTRACT_ADDRESS).burn(
             tokenX,
             tokenY,
-            LP_TOKEN_CONTRACT_ADDRESS,
+            UNDERLYING_ASSET_ADDRESS,
             address(this),
             liquidity
         );
