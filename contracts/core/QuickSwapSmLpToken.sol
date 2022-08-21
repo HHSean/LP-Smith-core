@@ -9,6 +9,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {IFactory} from "./interfaces/IFactory.sol";
+import {UnsignedCalc} from "./libraries/UnsignedCalc.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
 
@@ -29,6 +30,8 @@ contract QuickSwapSmLpToken is ISmLpToken, ERC20, Ownable {
     address public override tokenX;
     address public override tokenY;
 
+    bool public pendingOnSaleXSign;
+    bool public pendingOnSaleYSign;
     uint256 public pendingOnSaleX;
     uint256 public pendingOnSaleY;
 
@@ -160,6 +163,25 @@ contract QuickSwapSmLpToken is ISmLpToken, ERC20, Ownable {
         uint256 _reducedY = userStatus[user].initY.mul(amount).div(
             userStatus[user].totalLpToken
         );
+
+        if (_amountX < _reducedX) {
+            (pendingOnSaleXSign, pendingOnSaleX) = UnsignedCalc
+                .calculateUnsignedAdd(
+                    pendingOnSaleXSign,
+                    pendingOnSaleX,
+                    true,
+                    _reducedX.sub(_amountX)
+                );
+        }
+        if (_amountY < _reducedY) {
+            (pendingOnSaleYSign, pendingOnSaleY) = UnsignedCalc
+                .calculateUnsignedAdd(
+                    pendingOnSaleXSign,
+                    pendingOnSaleX,
+                    true,
+                    _reducedY.sub(_amountY)
+                );
+        }
 
         userStatus[user].totalLpToken = userStatus[user].totalLpToken.sub(
             amount
@@ -309,18 +331,44 @@ contract QuickSwapSmLpToken is ISmLpToken, ERC20, Ownable {
     function getPotentialOnSale(address asset)
         external
         view
-        returns (bool sign, uint256 _potentialOnSale)
+        returns (bool _isPositive, uint256 _potentialOnSale)
     {
         require(asset == tokenX || asset == tokenY, "Invalid Token Address");
         uint256 debt;
+        uint256 initDebt;
+
+        if (asset == tokenX) {
+            (debt, , ) = _getDebt();
+            initDebt = totalStatus.initX;
+        } else {
+            (, debt, ) = _getDebt();
+            initDebt = totalStatus.initY;
+        }
+
+        if (initDebt > debt) {
+            _isPositive = true;
+            _potentialOnSale = initDebt.sub(debt);
+        } else {
+            _isPositive = false;
+            _potentialOnSale = debt.sub(initDebt);
+        }
     }
 
     function getPendingOnSale(address asset)
         external
         view
         override
-        returns (bool sign, uint256 _pendingOnSale)
-    {}
+        returns (bool _isPositive, uint256 _pendingOnSale)
+    {
+        require(asset == tokenX || asset == tokenY, "Invalid Token Address");
+        if (asset == tokenX) {
+            _isPositive = pendingOnSaleXSign;
+            _pendingOnSale = pendingOnSaleX;
+        } else {
+            _isPositive = pendingOnSaleYSign;
+            _pendingOnSale = pendingOnSaleY;
+        }
+    }
 
     function getDepositValue(address user) public view returns (uint256) {
         (, , uint256 lpPrice) = _getDebt();
