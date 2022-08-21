@@ -168,6 +168,8 @@ contract QuickSwapSmLpToken is ISmLpToken, ERC20, Ownable {
             : uint(0);
         userStatus[user].initX = userStatus[user].initX.sub(_reducedX);
         userStatus[user].initY = userStatus[user].initY.sub(_reducedY);
+        totalInitX = totalInitX.sub(_reducedX);
+        totalInitY = totalInitY.sub(_reducedY);
 
         _isCloseAll = userStatus[user].totalLpToken == 0;
 
