@@ -112,8 +112,7 @@ contract LendingPool is ILendingPool {
 
     function depositERC20LpToken(
         address lpTokenAddress,
-        uint256 amount, // lp token qty
-        address onBehalfOf
+        uint256 amount // lp token qty
     ) external override {
         // TODO transfer lpToken from msg.sender to smLpTokenAddress
         // TODO call smLpToken to mint token (disperse LP token is held here)
@@ -122,8 +121,7 @@ contract LendingPool is ILendingPool {
 
     function withdrawERC20LpToken(
         address lpTokenAddress,
-        uint256 amount, // lp token qty (not sm lp token)
-        address to
+        uint256 amount // lp token qty (not sm lp token)
     ) external override returns (uint256) {
         // TODO get how much LP tokens should be minted(consider total LP token # - unrealised LP token #)
         // TODO get how much tokens are needed to mint that much LP token
@@ -136,8 +134,7 @@ contract LendingPool is ILendingPool {
      */
     function deposit(
         address asset,
-        uint256 amount, // asset unit
-        address onBehalfOf
+        uint256 amount // asset unit
     ) external override {
         // TODO transfer asset to smToken
         // TODO mint smToken -> debt calculation held inside here (to get smToken exchage rate)
@@ -148,8 +145,7 @@ contract LendingPool is ILendingPool {
      */
     function withdraw(
         address asset,
-        uint256 amount, // asset unit (not smToken unit)
-        address to
+        uint256 amount // asset unit (not smToken unit)
     ) external override returns (uint256) {
         // TODO burn smToken -> debt calculation held inside here (to get smToken exchange rate)
         // TODO transfer asset from smToken to "to"
@@ -158,11 +154,7 @@ contract LendingPool is ILendingPool {
     /**
      * protocol erc20 borrow
      */
-    function borrow(
-        address asset,
-        uint256 amount,
-        address onBehalfOf
-    ) external override {
+    function borrow(address asset, uint256 amount) external override {
         // TODO 1. validate if user can borrow asset
         // TODO 1-1. should calculate user's deposit value
         // TODO 1-2. make sure it doesn't exceed liquidation threshold
@@ -172,11 +164,11 @@ contract LendingPool is ILendingPool {
     /**
      * protocol erc20 repay
      */
-    function repay(
-        address asset,
-        uint256 amount,
-        address onBehalfOf
-    ) external override returns (uint256) {
+    function repay(address asset, uint256 amount)
+        external
+        override
+        returns (uint256)
+    {
         // TODO transfer asset to smToken
         // TODO update borrowed amount of user
     }
