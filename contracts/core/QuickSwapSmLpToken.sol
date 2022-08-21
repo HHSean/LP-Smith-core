@@ -220,11 +220,9 @@ contract QuickSwapSmLpToken is ISmLpToken, ERC20, Ownable {
             "Exceed Amount"
         );
 
-        (
-            uint256 _amountX,
-            uint256 _amountY,
-            uint256 _mintedAmount
-        ) = _addLiquidity(amount);
+        uint256 _amountX;
+        uint256 _amountY;
+        (_amountX, _amountY, amount) = _addLiquidity(amount);
 
         uint256 _reducedX = userStatus[user].initX.mul(amount).div(
             userStatus[user].totalLpToken
