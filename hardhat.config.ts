@@ -4,8 +4,6 @@ import "hardhat-deploy";
 
 require("dotenv").config();
 
-console.log(process.env.ALCHEMY_POLYGON_PROVIDER_URL);
-
 const config: HardhatUserConfig = {
   solidity: {
     version: "0.8.9",
