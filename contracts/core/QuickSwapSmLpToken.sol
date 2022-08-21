@@ -9,6 +9,7 @@ import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {IFactory} from "./interfaces/IFactory.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
+import "@openzeppelin/contracts/utils/math/Math.sol";
 
 // TODO Oliver
 contract QuickSwapSmLpToken is ISmLpToken, ERC20, Ownable {
@@ -18,7 +19,7 @@ contract QuickSwapSmLpToken is ISmLpToken, ERC20, Ownable {
     string private _name;
     string private _symbol;
 
-    address _pool;
+    uint256 public collateralRate; //bp
 
     address public override UNDERLYING_ASSET_ADDRESS;
     address public STRATEGY_CONTRACT_ADDRESS;
@@ -34,7 +35,7 @@ contract QuickSwapSmLpToken is ISmLpToken, ERC20, Ownable {
 
     struct UserStatus {
         uint256 totalLpToken;
-        uint256 unrealizedLpToken;
+        uint256 realizedLpToken;
         uint256 initX;
         uint256 initY;
     }
@@ -44,12 +45,14 @@ contract QuickSwapSmLpToken is ISmLpToken, ERC20, Ownable {
     constructor(
         string memory name_,
         string memory symbol_,
+        uint256 _collateralRate,
         address factoryContractAddress,
         address lpTokenContractAddress,
         address strategyContractAddress
     ) ERC20(name_, symbol_) {
         _name = name_;
         _symbol = symbol_;
+        collateralRate = _collateralRate;
         FACTORY_CONTRACT_ADDRESS = factoryContractAddress;
         UNDERLYING_ASSET_ADDRESS = lpTokenContractAddress;
         STRATEGY_CONTRACT_ADDRESS = strategyContractAddress;
@@ -58,12 +61,12 @@ contract QuickSwapSmLpToken is ISmLpToken, ERC20, Ownable {
     }
 
     modifier onlyLendingPool() {
-        require(msg.sender == address(_pool), "Not called by lending pool");
+        require(
+            msg.sender ==
+                address(IFactory(FACTORY_CONTRACT_ADDRESS).getLendingPool()),
+            "Not called by lending pool"
+        );
         _;
-    }
-
-    function setLendingPool(address pool_) external onlyOwner {
-        _pool = pool_;
     }
 
     //Backlog
@@ -116,9 +119,6 @@ contract QuickSwapSmLpToken is ISmLpToken, ERC20, Ownable {
         userStatus[user].totalLpToken = userStatus[user].totalLpToken.add(
             amount
         );
-        userStatus[user].unrealizedLpToken = userStatus[user]
-            .unrealizedLpToken
-            .add(amount);
         userStatus[user].initX = userStatus[user].initX.add(_amountX);
         userStatus[user].initY = userStatus[user].initY.add(_amountY);
 
@@ -132,24 +132,49 @@ contract QuickSwapSmLpToken is ISmLpToken, ERC20, Ownable {
         address user,
         uint256 amount // LP token
     ) external onlyLendingPool returns (bool _isCloseAll) {
-        // TODO _beforeBurn() mints lp token. Recipient of lp token is smLpToken
-        // TODO reduce initX, initY proportionally
-        // TODO reduce unrealisedLpToken
-        // TODO reduce totalLpToken
-        // TODO burn token same qty with amount
-        _burn(user, amount);
+        require(amount <= balanceOf(address(this)), "Insufficient smLpToken");
+
+        uint256 _amountToMint = amount > userStatus[user].realizedLpToken
+            ? amount.sub(userStatus[user].realizedLpToken)
+            : uint256(0);
+
+        (
+            uint256 _amountX,
+            uint256 _amountY,
+            uint256 _mintedAmount
+        ) = _amountToMint == 0
+                ? (uint256(0), uint256(0), uint256(0))
+                : _addLiquidity(_amountToMint);
+
+        IERC20(UNDERLYING_ASSET_ADDRESS).transfer(
+            user,
+            Math.min(userStatus[user].realizedLpToken, amount).add(
+                _mintedAmount
+            )
+        );
+
+        uint256 _reducedX = userStatus[user].initX.mul(amount).div(
+            userStatus[user].totalLpToken
+        );
+        uint256 _reducedY = userStatus[user].initY.mul(amount).div(
+            userStatus[user].totalLpToken
+        );
+
+        userStatus[user].totalLpToken = userStatus[user].totalLpToken.sub(
+            amount
+        );
+        userStatus[user].realizedLpToken = _amountToMint == 0
+            ? userStatus[user].realizedLpToken.sub(amount)
+            : uint(0);
+        userStatus[user].initX = userStatus[user].initX.sub(_reducedX);
+        userStatus[user].initY = userStatus[user].initY.sub(_reducedY);
+
+        _isCloseAll = userStatus[user].totalLpToken == 0;
+
+        _burn(address(this), amount);
     }
 
-    function _beforeBurn(uint256 amount)
-        internal
-        returns (uint256 _amountX, uint256 _amountY)
-    {}
-
-    function _addLiquidity(
-        uint256 amountX,
-        uint256 amountY,
-        uint256 liquidity
-    )
+    function _addLiquidity(uint256 liquidity)
         internal
         returns (
             uint256 _amountX,
@@ -157,14 +182,14 @@ contract QuickSwapSmLpToken is ISmLpToken, ERC20, Ownable {
             uint256 _liquidity
         )
     {
-        require(
-            amountX <= IERC20(tokenX).balanceOf(address(this)),
-            "Insufficient TokenX"
-        );
-        require(
-            amountY <= IERC20(tokenY).balanceOf(address(this)),
-            "Insufficient TokenY"
-        );
+        (uint256 amountX, uint256 amountY) = IStrategy(
+            STRATEGY_CONTRACT_ADDRESS
+        ).getInputAmountsForLpToken(UNDERLYING_ASSET_ADDRESS, liquidity);
+
+        ILendingPool(IFactory(FACTORY_CONTRACT_ADDRESS).getLendingPool())
+            .requestFund(tokenX, amountX);
+        ILendingPool(IFactory(FACTORY_CONTRACT_ADDRESS).getLendingPool())
+            .requestFund(tokenY, amountY);
 
         IERC20(tokenX).approve(STRATEGY_CONTRACT_ADDRESS, amountX);
         IERC20(tokenY).approve(STRATEGY_CONTRACT_ADDRESS, amountY);
@@ -235,19 +260,17 @@ contract QuickSwapSmLpToken is ISmLpToken, ERC20, Ownable {
         returns (bool sign, uint256 _pendingOnSale)
     {}
 
-    function getDepositValue(address user) public view returns(uint256){
+    function getDepositValue(address user) public view returns (uint256) {
         // TODO
     }
 
-    function getBorrowableValue(address user) public view returns(uint256){
-
-    }
+    function getBorrowableValue(address user) public view returns (uint256) {}
 
     function _beforeMint(uint256 liquidity)
         internal
         returns (uint256 _amountX, uint256 _amountY)
     {
-        _removeLiquidity(liquidity);
+        (_amountX, _amountY) = _removeLiquidity(liquidity);
 
         address lendingPoolAddress = IFactory(FACTORY_CONTRACT_ADDRESS)
             .getLendingPool();

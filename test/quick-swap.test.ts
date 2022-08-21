@@ -1,6 +1,7 @@
 const dotenv = require("dotenv");
 import * as hre from "hardhat";
 import { ethers } from "hardhat";
+import { BigNumber } from "bignumber.js";
 
 dotenv.config();
 
@@ -11,7 +12,7 @@ const QUICK_SWAP_ROUTER_02_ADDRESS_IN_POLYGON_MAINNET =
 
 const USDC = "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174";
 const USDT = "0xc2132D05D31c914a87C6611C10748AEb04B58e8F";
-
+const USDC_USDT_LP = "0x2cF7252e74036d1Da831d11089D326296e64a728";
 
 describe("Quick Swap Test", () => {
   it("test", async () => {
@@ -22,9 +23,22 @@ describe("Quick Swap Test", () => {
       QUICK_SWAP_ROUTER_02_ADDRESS_IN_POLYGON_MAINNET
     );
     await contract.deployed();
-
-    
-
+    await setTimeout(() => {}, 3000);
+    const res = await contract.getInputAmountsForLpToken(
+      USDC_USDT_LP,
+      ethers.utils.parseUnits("1", 18)
+    );
+    console.log(
+      new BigNumber(res._amountA.toString()).toFixed(),
+      new BigNumber(res._amountB.toString()).toFixed()
+    );
+    await setTimeout(() => {}, 3000);
+    const res2 = await contract.getEstimatedLpTokenAmount(
+      USDC_USDT_LP,
+      res._amountA,
+      res._amountB
+    );
+    console.log(new BigNumber(res2.toString()).toFixed());
   });
   /*
   it("should be operated addLiquidity Method", async () => {
