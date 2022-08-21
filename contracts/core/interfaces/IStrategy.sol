@@ -3,7 +3,6 @@ pragma solidity ^0.8.9;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "./interfaces/IUniswapV2Router02.sol";
 
 interface IStrategy {
     event Log(string message, uint val);
@@ -30,5 +29,5 @@ interface IStrategy {
         uint liquidity
     ) external returns (uint amountA, uint amountB);
 
-    function setRouter(address _newRouterAddress) public;
+    function setRouter(address _newRouterAddress) external;
 }

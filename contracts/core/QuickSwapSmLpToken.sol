@@ -7,6 +7,7 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {IFactory} from "./interfaces/IFactory.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
 // TODO Oliver
@@ -14,11 +15,14 @@ contract QuickSwapSmLpToken is ISmLpToken, ERC20, Ownable {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
+    string private _name;
+    string private _symbol;
+
     address _pool;
 
-    address public override LENDING_POOL_CONTRACT_ADDRESS;
-    address public override LP_TOKEN_CONTRACT_ADDRESS;
-    address public override STRATEGY_CONTRACT_ADDRESS;
+    address public override UNDERLYING_ASSET_ADDRESS;
+    address public STRATEGY_CONTRACT_ADDRESS;
+    address public FACTORY_CONTRACT_ADDRESS;
     address public override tokenX;
     address public override tokenY;
 
@@ -40,17 +44,17 @@ contract QuickSwapSmLpToken is ISmLpToken, ERC20, Ownable {
     constructor(
         string memory name_,
         string memory symbol_,
-        address lendingPoolContractAddress,
+        address factoryContractAddress,
         address lpTokenContractAddress,
         address strategyContractAddress
-    ) {
+    ) ERC20(name_, symbol_) {
         _name = name_;
         _symbol = symbol_;
-        LENDING_POOL_CONTRACT_ADDRESS = lendingPoolContractAddress;
-        LP_TOKEN_CONTRACT_ADDRESS = lpTokenContractAddress;
+        FACTORY_CONTRACT_ADDRESS = factoryContractAddress;
+        UNDERLYING_ASSET_ADDRESS = lpTokenContractAddress;
         STRATEGY_CONTRACT_ADDRESS = strategyContractAddress;
-        tokenX = IUniswapV2Pair(LP_TOKEN_CONTRACT_ADDRESS).token0();
-        tokenY = IUniswapV2Pair(LP_TOKEN_CONTRACT_ADDRESS).token1();
+        tokenX = IUniswapV2Pair(UNDERLYING_ASSET_ADDRESS).token0();
+        tokenY = IUniswapV2Pair(UNDERLYING_ASSET_ADDRESS).token1();
     }
 
     modifier onlyLendingPool() {
@@ -88,18 +92,17 @@ contract QuickSwapSmLpToken is ISmLpToken, ERC20, Ownable {
     }*/
 
     //Backlog: should apply user status for recipient
-    function _transfer(address to, uint256 amount) internal override returns (bool) {
+    function _transfer(address to, uint256 amount) internal returns (bool) {
         // TODO validate the aTokens between two users. Validate the transfer
         // TODO if health factor is still good after the transfer, it's allowed to transfer
     }
 
     function mint(
         address user,
-        uint256 amount, // LP token
+        uint256 amount // LP token
     ) external onlyLendingPool returns (uint256 _amountX, uint256 _amountY) {
         require(
-            liquidity <
-                IERC20(LP_TOKEN_CONTRACT_ADDRESS).balanceOf(address(this)),
+            amount < IERC20(UNDERLYING_ASSET_ADDRESS).balanceOf(address(this)),
             "Insufficient Liquidity"
         );
         (_amountX, _amountY) = _beforeMint(amount);
@@ -117,7 +120,7 @@ contract QuickSwapSmLpToken is ISmLpToken, ERC20, Ownable {
 
     function burn(
         address user,
-        uint256 amount, // LP token
+        uint256 amount // LP token
     ) external onlyLendingPool {
         // TODO _beforeBurn() mints lp token. Recipient of lp token is smLpToken
         // TODO reduce initX, initY proportionally
@@ -127,9 +130,9 @@ contract QuickSwapSmLpToken is ISmLpToken, ERC20, Ownable {
         _burn(user, amount);
     }
 
-    function _addLiquidity() returns (uint liquidity) {}
+    function _addLiquidity() internal returns (uint liquidity) {}
 
-    function _removeLiquidity() returns (uint amountX, uint amountY) {}
+    function _removeLiquidity() internal returns (uint amountX, uint amountY) {}
 
     // Not needed, this contract doesn't have assets
     /*
@@ -156,14 +159,17 @@ contract QuickSwapSmLpToken is ISmLpToken, ERC20, Ownable {
         // TODO
     }
 
-    function getPositionValue(address user) external view {
-        // TODO
-    }
-
     function getPotentialOnSale(address asset)
         external
         view
         returns (bool sign, uint256 _potentialOnSale)
+    {}
+
+    function getPendingOnSale(address asset)
+        external
+        view
+        override
+        returns (bool sign, uint256 _pendingOnSale)
     {}
 
     function getPositionValue(address user) external view {
@@ -174,7 +180,7 @@ contract QuickSwapSmLpToken is ISmLpToken, ERC20, Ownable {
         internal
         returns (uint256 _amountX, uint256 _amountY)
     {
-        IERC20(LP_TOKEN_CONTRACT_ADDRESS).transfer(
+        IERC20(UNDERLYING_ASSET_ADDRESS).transfer(
             STRATEGY_CONTRACT_ADDRESS,
             liquidity
         );
@@ -182,12 +188,15 @@ contract QuickSwapSmLpToken is ISmLpToken, ERC20, Ownable {
         (_amountX, _amountY) = IStrategy(STRATEGY_CONTRACT_ADDRESS).burn(
             tokenX,
             tokenY,
-            LP_TOKEN_CONTRACT_ADDRESS,
+            UNDERLYING_ASSET_ADDRESS,
             address(this),
             liquidity
         );
 
-        IERC20(tokenX).transfer(LENDING_POOL_CONTRACT_ADDRESS, _amountX);
-        IERC20(tokenY).transfer(LENDING_POOL_CONTRACT_ADDRESS, _amountY);
+        address lendingPoolAddress = IFactory(FACTORY_CONTRACT_ADDRESS)
+            .getLendingPool();
+
+        IERC20(tokenX).transfer(lendingPoolAddress, _amountX);
+        IERC20(tokenY).transfer(lendingPoolAddress, _amountY);
     }
 }

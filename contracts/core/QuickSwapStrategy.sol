@@ -7,13 +7,13 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "./interfaces/IUniswapV2Router02.sol";
 import "./interfaces/IStrategy.sol";
 import "./interfaces/IUniswapV2Pair.sol";
-import './libraries/Math.sol';
-import "./libraries/SafeMath.sol";
+import "@openzeppelin/contracts/utils/math/SafeMath.sol";
+import "@openzeppelin/contracts/utils/math/Math.sol";
 
 // TODO Evan
 // TODO: need to use modifier
 contract QuickSwapStrategy is IStrategy, Ownable {
-    using SafeMath  for uint;
+    using SafeMath for uint;
 
     address public QUICK_SWAP_ROUTER_02_ADDRESS_IN_POLYGON_MAINNET;
 
@@ -82,10 +82,13 @@ contract QuickSwapStrategy is IStrategy, Ownable {
         address _tokenA,
         address _tokenB,
         address liquidityToken,
-        address recipient
+        address recipient,
         uint liquidity
     ) external returns (uint amountA, uint amountB) {
-        require(liquidity < IERC20(liquidityToken).balanceOf(address(this)), "Insufficient Liquidity");
+        require(
+            liquidity < IERC20(liquidityToken).balanceOf(address(this)),
+            "Insufficient Liquidity"
+        );
 
         IERC20(liquidityToken).approve(
             QUICK_SWAP_ROUTER_02_ADDRESS_IN_POLYGON_MAINNET,
@@ -113,14 +116,26 @@ contract QuickSwapStrategy is IStrategy, Ownable {
         QUICK_SWAP_ROUTER_02_ADDRESS_IN_POLYGON_MAINNET = _newRouterAddress;
     }
 
-    function getEstimatedLpTokenAmount(address _liquidityToken, uint _amountADesired, uint _amountBDesired) public view returns(uint liquidity) {
-        uint liquidityTokenTotalSupply = IUniswapV2Pair(_liquidityToken).totalSupply();
-        (uint112 _reserve0, uint112 _reserve1,) = IUniswapV2Pair(_liquidityToken).getReserves();
+    function getEstimatedLpTokenAmount(
+        address _liquidityToken,
+        uint _amountADesired,
+        uint _amountBDesired
+    ) public view returns (uint liquidity) {
+        uint liquidityTokenTotalSupply = IUniswapV2Pair(_liquidityToken)
+            .totalSupply();
+        (uint112 _reserve0, uint112 _reserve1, ) = IUniswapV2Pair(
+            _liquidityToken
+        ).getReserves();
         if (liquidityTokenTotalSupply == 0) {
-            liquidity = Math.sqrt(_amountADesired.mul(_amountBDesired)).sub(MINIMUM_LIQUIDITY);
+            liquidity = Math.sqrt(_amountADesired.mul(_amountBDesired)).sub(
+                MINIMUM_LIQUIDITY
+            );
         } else {
-            liquidity = Math.min(_amountADesired.mul(liquidityTokenTotalSupply) / _reserve0, _amountBDesired.mul(liquidityTokenTotalSupply) / _reserve1);
+            liquidity = Math.min(
+                _amountADesired.mul(liquidityTokenTotalSupply) / _reserve0,
+                _amountBDesired.mul(liquidityTokenTotalSupply) / _reserve1
+            );
         }
-        require(liquidity > 0, 'UniswapV2: INSUFFICIENT_LIQUIDITY_MINTED');
+        require(liquidity > 0, "UniswapV2: INSUFFICIENT_LIQUIDITY_MINTED");
     }
 }

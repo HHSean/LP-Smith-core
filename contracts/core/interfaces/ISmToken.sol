@@ -96,7 +96,7 @@ interface ISmToken is IERC20 {
     function handleRepayment(address user, uint256 amount) external;
 
     /**
-     * @dev Returns the address of the underlying asset of this aToken (E.g. WETH for aWETH)
+     * @dev Returns the address of the underlying asset of this smToken (E.g. WETH for smWETH)
      **/
     function UNDERLYING_ASSET_ADDRESS() external view returns (address);
 }

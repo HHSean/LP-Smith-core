@@ -10,9 +10,23 @@ import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 contract LendingPool is ILendingPool {
     using SafeMath for uint256;
 
-    ISmLpToken[] smLpTokens;
-    mapping(address => address) smLpTokenMap;
-    mapping(address => ISmLpToken[]) smLpTokenListPerAsset;
+    // mapping(address => address) cdTokenMap; // CD: Certificate of Deposit; left-hand: underlying token; right-hand: cd Token address
+    mapping(address => address) smLpTokenMap; // left-hand: underlying token; right-hand: cd Token address
+    mapping(address => address) smTokenMap; // left-hand: underlying token; right-hand: cd Token address
+    mapping(address => ISmLpToken[]) smLpTokenListPerAsset; // smLpToken list of certain asset
+
+    modifier onlySmLpToken(address asset) {
+        ISmLpToken[] storage smLpTokenList = smLpTokenListPerAsset[asset];
+        uint256 length = smLpTokenList.length;
+        bool flag = false;
+        for (uint80 i = 0; i < length; i++) {
+            if (address(smLpTokenList[i]) == msg.sender) {
+                flag = true;
+            }
+        }
+        require(flag, "Your not smLpToken");
+        _;
+    }
 
     function getLpDebts(address asset)
         external
@@ -164,4 +178,9 @@ contract LendingPool is ILendingPool {
         // TODO transfer asset to smToken
         // TODO update borrowed amount of user
     }
+
+    function requestFund(address asset, uint256 amount)
+        external
+        onlySmLpToken(asset)
+    {}
 }
