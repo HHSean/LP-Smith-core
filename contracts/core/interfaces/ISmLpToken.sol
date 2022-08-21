@@ -40,6 +40,8 @@ interface ISmLpToken is IERC20 {
         external
         returns (bool _isCloseAll);
 
+    function realizeLp(address user, uint256 amount) external;
+
     /**
      * @dev Returns the address of the underlying asset of this smToken (E.g. WETH for smWETH)
      **/
