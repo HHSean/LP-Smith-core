@@ -1,6 +1,7 @@
 import * as hre from "hardhat";
 import { ethers } from "hardhat";
 import { expect } from "chai";
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 
 const dotenv = require("dotenv");
 
@@ -67,8 +68,7 @@ describe("Quick Swap Test", () => {
     });
   });
 
-  it("should be operated addLiquidity Method", async () => {
-    // given
+  async function deployTokenFixture() {
     const QuickSwapStrategy = await hre.ethers.getContractFactory(
       "QuickSwapStrategy"
     );
@@ -81,17 +81,35 @@ describe("Quick Swap Test", () => {
     const usdtSigner = await ethers.getSigner(USDT_WHALE_ADDRESS_IN_POLYGON);
 
     const usdcContract = await ethers.getContractAt("IERC20", USDC);
-    const usdTContract = await ethers.getContractAt("IERC20", USDT);
+    const usdtContract = await ethers.getContractAt("IERC20", USDT);
 
     await usdcContract
       .connect(usdcSigner)
-      .transfer(FAKE_ACCOUNT_ZERO, 100 * 10 ** 6);
-    await usdTContract
-      .connect(usdtSigner)
-      .transfer(FAKE_ACCOUNT_ZERO, 100 * 10 ** 6);
+      .transfer(FAKE_ACCOUNT_ZERO, 100000 * 10 ** 6);
 
-    await usdcContract.approve(quickSwapStrategy.address, 1000 * 10 ** 6);
-    await usdTContract.approve(quickSwapStrategy.address, 1000 * 10 ** 6);
+    await usdcContract
+      .connect(usdcSigner)
+      .transfer(quickSwapStrategy.address, 100000 * 10 ** 6);
+
+    await usdtContract
+      .connect(usdtSigner)
+      .transfer(FAKE_ACCOUNT_ZERO, 100000 * 10 ** 6);
+
+    await usdcContract.approve(quickSwapStrategy.address, 100000 * 10 ** 6);
+    await usdtContract.approve(quickSwapStrategy.address, 100000 * 10 ** 6);
+
+    return {
+      quickSwapStrategy,
+      usdcSigner,
+      usdtSigner,
+      usdcContract,
+      usdtContract,
+    };
+  }
+
+  it("should be operated addLiquidity Method", async () => {
+    // given
+    const { quickSwapStrategy } = await loadFixture(deployTokenFixture);
 
     // when
     const addLiquidityResult = await quickSwapStrategy.mint(
@@ -108,34 +126,12 @@ describe("Quick Swap Test", () => {
 
   it("should be operated removeLiquidity Method", async () => {
     // given
-    const QuickSwapStrategy = await hre.ethers.getContractFactory(
-      "QuickSwapStrategy"
-    );
-
-    const quickSwapStrategy = await QuickSwapStrategy.deploy(
-      QUICK_SWAP_ROUTER_02_ADDRESS_IN_POLYGON_MAINNET
-    );
-
-    const usdcSigner = await ethers.getSigner(USDC_WHALE_ADDRESS_IN_POLYGON);
-    const usdtSigner = await ethers.getSigner(USDT_WHALE_ADDRESS_IN_POLYGON);
-
-    const usdcContract = await ethers.getContractAt("IERC20", USDC);
-    const usdTContract = await ethers.getContractAt("IERC20", USDT);
+    const { quickSwapStrategy } = await loadFixture(deployTokenFixture);
 
     const lpTokenContract = await ethers.getContractAt(
       "IERC20",
       QUICKSWAP_USDC_USDT_POOL_IN_POLYGON
     );
-
-    await usdcContract
-      .connect(usdcSigner)
-      .transfer(FAKE_ACCOUNT_ZERO, 1000 * 10 ** 6);
-    await usdTContract
-      .connect(usdtSigner)
-      .transfer(FAKE_ACCOUNT_ZERO, 1000 * 10 ** 6);
-
-    await usdcContract.approve(quickSwapStrategy.address, 10000 * 10 ** 6);
-    await usdTContract.approve(quickSwapStrategy.address, 10000 * 10 ** 6);
 
     // when
     const addLiquidityResult = await quickSwapStrategy.mint(
@@ -163,13 +159,7 @@ describe("Quick Swap Test", () => {
 
   it("should be calculated Estimated LP Token Amount", async () => {
     // given
-    const QuickSwapStrategy = await hre.ethers.getContractFactory(
-      "QuickSwapStrategy"
-    );
-
-    const quickSwapStrategy = await QuickSwapStrategy.deploy(
-      QUICK_SWAP_ROUTER_02_ADDRESS_IN_POLYGON_MAINNET
-    );
+    const { quickSwapStrategy } = await loadFixture(deployTokenFixture);
 
     // when
     const result = await quickSwapStrategy.getEstimatedLpTokenAmount(
@@ -184,33 +174,7 @@ describe("Quick Swap Test", () => {
 
   it("should be operated mintWithETH Method", async () => {
     // given
-    const QuickSwapStrategy = await hre.ethers.getContractFactory(
-      "QuickSwapStrategy"
-    );
-
-    const quickSwapStrategy = await QuickSwapStrategy.deploy(
-      QUICK_SWAP_ROUTER_02_ADDRESS_IN_POLYGON_MAINNET
-    );
-
-    const wethSigner = await ethers.getSigner(WETH_WHALE_ADDRESS_IN_POLYGON);
-
-    const usdcSigner = await ethers.getSigner(USDC_WHALE_ADDRESS_IN_POLYGON);
-
-    const wethContract = await ethers.getContractAt("IERC20", WETH);
-
-    const usdcContract = await ethers.getContractAt("IERC20", USDC);
-
-    await wethContract
-      .connect(wethSigner)
-      .transfer(quickSwapStrategy.address, 10000 * 10 ** 6);
-
-    await usdcContract
-      .connect(usdcSigner)
-      .transfer(quickSwapStrategy.address, 10000 * 10 ** 6);
-
-    await wethContract.approve(quickSwapStrategy.address, 10000 * 10 ** 6);
-
-    await usdcContract.approve(quickSwapStrategy.address, 10000 * 10 ** 6);
+    const { quickSwapStrategy } = await loadFixture(deployTokenFixture);
 
     // when
     const addLiquidityResult = await quickSwapStrategy.mintWithETH(
@@ -230,28 +194,12 @@ describe("Quick Swap Test", () => {
 
   it("should be operated removeLiquidityWithETH Method", async () => {
     // given
-    const QuickSwapStrategy = await hre.ethers.getContractFactory(
-      "QuickSwapStrategy"
-    );
-
-    const quickSwapStrategy = await QuickSwapStrategy.deploy(
-      QUICK_SWAP_ROUTER_02_ADDRESS_IN_POLYGON_MAINNET
-    );
-
-    const usdcSigner = await ethers.getSigner(USDC_WHALE_ADDRESS_IN_POLYGON);
-
-    const usdcContract = await ethers.getContractAt("IERC20", USDC);
+    const { quickSwapStrategy } = await loadFixture(deployTokenFixture);
 
     const lpTokenContract = await ethers.getContractAt(
       "IERC20",
       QUICKSWAP_ETH_USDC_POOL_IN_POLYGON
     );
-
-    await usdcContract
-      .connect(usdcSigner)
-      .transfer(quickSwapStrategy.address, 1000 * 10 ** 6);
-
-    await usdcContract.approve(quickSwapStrategy.address, 10000 * 10 ** 6);
 
     // when
     const addLiquidityResult = await quickSwapStrategy.mintWithETH(
@@ -286,13 +234,8 @@ describe("Quick Swap Test", () => {
 
   it("should be not operated If user is not Owner", async () => {
     // given
-    const QuickSwapStrategy = await hre.ethers.getContractFactory(
-      "QuickSwapStrategy"
-    );
+    const { quickSwapStrategy } = await loadFixture(deployTokenFixture);
 
-    const quickSwapStrategy = await QuickSwapStrategy.deploy(
-      QUICK_SWAP_ROUTER_02_ADDRESS_IN_POLYGON_MAINNET
-    );
     const otherSigner = await ethers.getSigner(FAKE_ACCOUNT_ONE);
 
     // when
