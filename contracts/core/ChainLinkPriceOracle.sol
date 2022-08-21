@@ -2,24 +2,29 @@
 pragma solidity ^0.8.9;
 
 import "./interfaces/chainlink/AggregatorV3Interface.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
-contract ChainLinkPriceOracle {
-    AggregatorV3Interface internal priceFeed;
+contract ChainLinkPriceOracle is Ownable {
+    mapping(address => address) public assetToDollarPriceFeed;
 
-    constructor() {
-        priceFeed = AggregatorV3Interface(
-            0xF9680D99D6C9589e2a93a78A04A279e509205945
-        ); // ETH/USD
-    }
+    constructor() {}
 
-    function getLatestPrice() public view returns (int) {
+    function getLatestPrice(address asset) public view returns (int256) {
         (
             uint80 roundID,
-            int price,
-            uint startedAt,
-            uint timeStamp,
+            int256 price,
+            uint256 startedAt,
+            uint256 timeStamp,
             uint80 answeredInRound
-        ) = priceFeed.latestRoundData();
-        return price / 1e8;
+        ) = AggregatorV3Interface(assetToDollarPriceFeed[asset])
+                .latestRoundData();
+        return price * 1e10;
+    }
+
+    function setAssetToPriceFeed(address _token, address _dollarPriceFeed)
+        public
+        onlyOwner
+    {
+        assetToDollarPriceFeed[_token] = _dollarPriceFeed;
     }
 }

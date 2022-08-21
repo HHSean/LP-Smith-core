@@ -1,6 +1,4 @@
-import { expect } from "chai";
 import * as hre from "hardhat";
-import { ethers } from "hardhat";
 
 const dotenv = require("dotenv");
 
@@ -39,6 +37,8 @@ const WETH = "0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619";
 
 const WMATIC = "0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270";
 
+const WBTC = "0x1bfd67037b42cf73acf2047067bd4f2c47d9bfd6";
+
 const QUICKSWAP_USDC_USDT_POOL_IN_POLYGON =
   "0x2cf7252e74036d1da831d11089d326296e64a728";
 
@@ -64,242 +64,271 @@ describe("Quick Swap Test", () => {
       params: [WETH_WHALE_ADDRESS_IN_POLYGON],
     });
   });
+  //
+  // it("should be operated addLiquidity Method", async () => {
+  //   // given
+  //   const QuickSwapStrategy = await hre.ethers.getContractFactory(
+  //     "QuickSwapStrategy"
+  //   );
+  //
+  //   const quickSwapStrategy = await QuickSwapStrategy.deploy(
+  //     QUICK_SWAP_ROUTER_02_ADDRESS_IN_POLYGON_MAINNET
+  //   );
+  //
+  //   const usdcSigner = await ethers.getSigner(USDC_WHALE_ADDRESS_IN_POLYGON);
+  //   const usdtSigner = await ethers.getSigner(USDT_WHALE_ADDRESS_IN_POLYGON);
+  //
+  //   const usdcContract = await ethers.getContractAt("IERC20", USDC);
+  //   const usdTContract = await ethers.getContractAt("IERC20", USDT);
+  //
+  //   await usdcContract
+  //     .connect(usdcSigner)
+  //     .transfer(FAKE_ACCOUNT_ZERO, 100 * 10 ** 6);
+  //   await usdTContract
+  //     .connect(usdtSigner)
+  //     .transfer(FAKE_ACCOUNT_ZERO, 100 * 10 ** 6);
+  //
+  //   await usdcContract.approve(quickSwapStrategy.address, 1000 * 10 ** 6);
+  //   await usdTContract.approve(quickSwapStrategy.address, 1000 * 10 ** 6);
+  //
+  //   // when
+  //   const addLiquidityResult = await quickSwapStrategy.mint(
+  //     USDT,
+  //     USDC,
+  //     10 * 10 ** 6,
+  //     10 * 10 ** 6,
+  //     quickSwapStrategy.address
+  //   );
+  //
+  //   // then
+  //   expect(addLiquidityResult).to.not.throws;
+  // });
+  //
+  // it("should be operated removeLiquidity Method", async () => {
+  //   // given
+  //   const QuickSwapStrategy = await hre.ethers.getContractFactory(
+  //     "QuickSwapStrategy"
+  //   );
+  //
+  //   const quickSwapStrategy = await QuickSwapStrategy.deploy(
+  //     QUICK_SWAP_ROUTER_02_ADDRESS_IN_POLYGON_MAINNET
+  //   );
+  //
+  //   const usdcSigner = await ethers.getSigner(USDC_WHALE_ADDRESS_IN_POLYGON);
+  //   const usdtSigner = await ethers.getSigner(USDT_WHALE_ADDRESS_IN_POLYGON);
+  //
+  //   const usdcContract = await ethers.getContractAt("IERC20", USDC);
+  //   const usdTContract = await ethers.getContractAt("IERC20", USDT);
+  //
+  //   const lpTokenContract = await ethers.getContractAt(
+  //     "IERC20",
+  //     QUICKSWAP_USDC_USDT_POOL_IN_POLYGON
+  //   );
+  //
+  //   await usdcContract
+  //     .connect(usdcSigner)
+  //     .transfer(FAKE_ACCOUNT_ZERO, 1000 * 10 ** 6);
+  //   await usdTContract
+  //     .connect(usdtSigner)
+  //     .transfer(FAKE_ACCOUNT_ZERO, 1000 * 10 ** 6);
+  //
+  //   await usdcContract.approve(quickSwapStrategy.address, 10000 * 10 ** 6);
+  //   await usdTContract.approve(quickSwapStrategy.address, 10000 * 10 ** 6);
+  //
+  //   // when
+  //   const addLiquidityResult = await quickSwapStrategy.mint(
+  //     USDT,
+  //     USDC,
+  //     10 * 10 ** 6,
+  //     10 * 10 ** 6,
+  //     FAKE_ACCOUNT_ZERO
+  //   );
+  //
+  //   await lpTokenContract.approve(quickSwapStrategy.address, 10000 * 10 ** 6);
+  //
+  //   const removeLiquidityResult = await quickSwapStrategy.burn(
+  //     USDT,
+  //     USDC,
+  //     QUICKSWAP_USDC_USDT_POOL_IN_POLYGON,
+  //     quickSwapStrategy.address,
+  //     "100000"
+  //   );
+  //
+  //   // then
+  //   expect(addLiquidityResult).to.not.throws;
+  //   expect(removeLiquidityResult).to.not.throws;
+  // });
+  //
+  // it("should be calculated Estimated LP Token Amount", async () => {
+  //   // given
+  //   const QuickSwapStrategy = await hre.ethers.getContractFactory(
+  //     "QuickSwapStrategy"
+  //   );
+  //
+  //   const quickSwapStrategy = await QuickSwapStrategy.deploy(
+  //     QUICK_SWAP_ROUTER_02_ADDRESS_IN_POLYGON_MAINNET
+  //   );
+  //
+  //   // when
+  //   const result = await quickSwapStrategy.getEstimatedLpTokenAmount(
+  //     QUICKSWAP_USDC_USDT_POOL_IN_POLYGON,
+  //     "10000000",
+  //     "10000000"
+  //   );
+  //
+  //   // then
+  //   expect(result).to.not.throws;
+  // });
+  //
+  // it("should be operated mintWithETH Method", async () => {
+  //   // given
+  //   const QuickSwapStrategy = await hre.ethers.getContractFactory(
+  //     "QuickSwapStrategy"
+  //   );
+  //
+  //   const quickSwapStrategy = await QuickSwapStrategy.deploy(
+  //     QUICK_SWAP_ROUTER_02_ADDRESS_IN_POLYGON_MAINNET
+  //   );
+  //
+  //   const wethSigner = await ethers.getSigner(WETH_WHALE_ADDRESS_IN_POLYGON);
+  //
+  //   const usdcSigner = await ethers.getSigner(USDC_WHALE_ADDRESS_IN_POLYGON);
+  //
+  //   const wethContract = await ethers.getContractAt("IERC20", WETH);
+  //
+  //   const usdcContract = await ethers.getContractAt("IERC20", USDC);
+  //
+  //   await wethContract
+  //     .connect(wethSigner)
+  //     .transfer(quickSwapStrategy.address, 10000 * 10 ** 6);
+  //
+  //   await usdcContract
+  //     .connect(usdcSigner)
+  //     .transfer(quickSwapStrategy.address, 10000 * 10 ** 6);
+  //
+  //   await wethContract.approve(quickSwapStrategy.address, 10000 * 10 ** 6);
+  //
+  //   await usdcContract.approve(quickSwapStrategy.address, 10000 * 10 ** 6);
+  //
+  //   // when
+  //   const addLiquidityResult = await quickSwapStrategy.mintWithETH(
+  //     USDC,
+  //     10 * 10 ** 6,
+  //     0,
+  //     0,
+  //     quickSwapStrategy.address,
+  //     {
+  //       value: ethers.BigNumber.from((10 * 10 ** 18).toString()),
+  //     }
+  //   );
+  //
+  //   // then
+  //   expect(addLiquidityResult).to.not.throws;
+  // });
+  //
+  // it("should be operated removeLiquidityWithETH Method", async () => {
+  //   // given
+  //   const QuickSwapStrategy = await hre.ethers.getContractFactory(
+  //     "QuickSwapStrategy"
+  //   );
+  //
+  //   const quickSwapStrategy = await QuickSwapStrategy.deploy(
+  //     QUICK_SWAP_ROUTER_02_ADDRESS_IN_POLYGON_MAINNET
+  //   );
+  //
+  //   const usdcSigner = await ethers.getSigner(USDC_WHALE_ADDRESS_IN_POLYGON);
+  //
+  //   const usdcContract = await ethers.getContractAt("IERC20", USDC);
+  //
+  //   const lpTokenContract = await ethers.getContractAt(
+  //     "IERC20",
+  //     QUICKSWAP_ETH_USDC_POOL_IN_POLYGON
+  //   );
+  //
+  //   await usdcContract
+  //     .connect(usdcSigner)
+  //     .transfer(quickSwapStrategy.address, 1000 * 10 ** 6);
+  //
+  //   await usdcContract.approve(quickSwapStrategy.address, 10000 * 10 ** 6);
+  //
+  //   // when
+  //   const addLiquidityResult = await quickSwapStrategy.mintWithETH(
+  //     USDC,
+  //     10 * 10 ** 6,
+  //     0,
+  //     0,
+  //     FAKE_ACCOUNT_ZERO,
+  //     {
+  //       value: ethers.BigNumber.from((10 * 10 ** 18).toString()),
+  //     }
+  //   );
+  //
+  //   await lpTokenContract.approve(
+  //     quickSwapStrategy.address,
+  //     10000000 * 10 ** 6
+  //   );
+  //
+  //   const removeLiquidityResult = await quickSwapStrategy.burnWithETH(
+  //     USDC,
+  //     QUICKSWAP_ETH_USDC_POOL_IN_POLYGON,
+  //     "100000",
+  //     "100000",
+  //     quickSwapStrategy.address,
+  //     "3060630597540"
+  //   );
+  //
+  //   // then
+  //   expect(addLiquidityResult).to.not.throws;
+  //   expect(removeLiquidityResult).to.not.throws;
+  // });
+  //
+  // it("should be not operated If user is not Owner", async () => {
+  //   // given
+  //   const QuickSwapStrategy = await hre.ethers.getContractFactory(
+  //     "QuickSwapStrategy"
+  //   );
+  //
+  //   const quickSwapStrategy = await QuickSwapStrategy.deploy(
+  //     QUICK_SWAP_ROUTER_02_ADDRESS_IN_POLYGON_MAINNET
+  //   );
+  //   const otherSigner = await ethers.getSigner(FAKE_ACCOUNT_ONE);
+  //
+  //   // when
+  //   const notOwnerUserCallSetRouterMethod = await quickSwapStrategy
+  //     .connect(otherSigner)
+  //     .setRouter(FAKE_ACCOUNT_ONE);
+  //
+  //   // then
+  //   // TODO Chai With Hardhat don't provide Promise Assert.
+  //   expect(notOwnerUserCallSetRouterMethod).to.be.throws();
+  // });
 
-  it("should be operated addLiquidity Method", async () => {
-    // given
-    const QuickSwapStrategy = await hre.ethers.getContractFactory(
-      "QuickSwapStrategy"
+  it("should be deployed with Setting Token Address and Data Feeds Address", async () => {
+    const ChainLinkPriceOracle = await hre.ethers.getContractFactory(
+      "ChainLinkPriceOracle"
     );
 
-    const quickSwapStrategy = await QuickSwapStrategy.deploy(
-      QUICK_SWAP_ROUTER_02_ADDRESS_IN_POLYGON_MAINNET
+    const chainLinkPriceOracle = await ChainLinkPriceOracle.deploy();
+    await chainLinkPriceOracle.setAssetToPriceFeed(
+      WETH,
+      "0xF9680D99D6C9589e2a93a78A04A279e509205945"
     );
 
-    const usdcSigner = await ethers.getSigner(USDC_WHALE_ADDRESS_IN_POLYGON);
-    const usdtSigner = await ethers.getSigner(USDT_WHALE_ADDRESS_IN_POLYGON);
-
-    const usdcContract = await ethers.getContractAt("IERC20", USDC);
-    const usdTContract = await ethers.getContractAt("IERC20", USDT);
-
-    await usdcContract
-      .connect(usdcSigner)
-      .transfer(FAKE_ACCOUNT_ZERO, 100 * 10 ** 6);
-    await usdTContract
-      .connect(usdtSigner)
-      .transfer(FAKE_ACCOUNT_ZERO, 100 * 10 ** 6);
-
-    await usdcContract.approve(quickSwapStrategy.address, 1000 * 10 ** 6);
-    await usdTContract.approve(quickSwapStrategy.address, 1000 * 10 ** 6);
-
-    // when
-    const addLiquidityResult = await quickSwapStrategy.mint(
-      USDT,
+    await chainLinkPriceOracle.setAssetToPriceFeed(
       USDC,
-      10 * 10 ** 6,
-      10 * 10 ** 6,
-      quickSwapStrategy.address
+      "0xfE4A8cc5b5B2366C1B58Bea3858e81843581b2F7"
     );
 
-    // then
-    expect(addLiquidityResult).to.not.throws;
-  });
-
-  it("should be operated removeLiquidity Method", async () => {
-    // given
-    const QuickSwapStrategy = await hre.ethers.getContractFactory(
-      "QuickSwapStrategy"
+    await chainLinkPriceOracle.setAssetToPriceFeed(
+      WBTC,
+      "0xc907E116054Ad103354f2D350FD2514433D57F6f"
     );
 
-    const quickSwapStrategy = await QuickSwapStrategy.deploy(
-      QUICK_SWAP_ROUTER_02_ADDRESS_IN_POLYGON_MAINNET
-    );
-
-    const usdcSigner = await ethers.getSigner(USDC_WHALE_ADDRESS_IN_POLYGON);
-    const usdtSigner = await ethers.getSigner(USDT_WHALE_ADDRESS_IN_POLYGON);
-
-    const usdcContract = await ethers.getContractAt("IERC20", USDC);
-    const usdTContract = await ethers.getContractAt("IERC20", USDT);
-
-    const lpTokenContract = await ethers.getContractAt(
-      "IERC20",
-      QUICKSWAP_USDC_USDT_POOL_IN_POLYGON
-    );
-
-    await usdcContract
-      .connect(usdcSigner)
-      .transfer(FAKE_ACCOUNT_ZERO, 1000 * 10 ** 6);
-    await usdTContract
-      .connect(usdtSigner)
-      .transfer(FAKE_ACCOUNT_ZERO, 1000 * 10 ** 6);
-
-    await usdcContract.approve(quickSwapStrategy.address, 10000 * 10 ** 6);
-    await usdTContract.approve(quickSwapStrategy.address, 10000 * 10 ** 6);
-
-    // when
-    const addLiquidityResult = await quickSwapStrategy.mint(
-      USDT,
-      USDC,
-      10 * 10 ** 6,
-      10 * 10 ** 6,
-      FAKE_ACCOUNT_ZERO
-    );
-
-    await lpTokenContract.approve(quickSwapStrategy.address, 10000 * 10 ** 6);
-
-    const removeLiquidityResult = await quickSwapStrategy.burn(
-      USDT,
-      USDC,
-      QUICKSWAP_USDC_USDT_POOL_IN_POLYGON,
-      quickSwapStrategy.address,
-      "100000"
-    );
-
-    // then
-    expect(addLiquidityResult).to.not.throws;
-    expect(removeLiquidityResult).to.not.throws;
-  });
-
-  it("should be calculated Estimated LP Token Amount", async () => {
-    // given
-    const QuickSwapStrategy = await hre.ethers.getContractFactory(
-      "QuickSwapStrategy"
-    );
-
-    const quickSwapStrategy = await QuickSwapStrategy.deploy(
-      QUICK_SWAP_ROUTER_02_ADDRESS_IN_POLYGON_MAINNET
-    );
-
-    // when
-    const result = await quickSwapStrategy.getEstimatedLpTokenAmount(
-      QUICKSWAP_USDC_USDT_POOL_IN_POLYGON,
-      "10000000",
-      "10000000"
-    );
-
-    // then
-    expect(result).to.not.throws;
-  });
-
-  it("should be operated mintWithETH Method", async () => {
-    // given
-    const QuickSwapStrategy = await hre.ethers.getContractFactory(
-      "QuickSwapStrategy"
-    );
-
-    const quickSwapStrategy = await QuickSwapStrategy.deploy(
-      QUICK_SWAP_ROUTER_02_ADDRESS_IN_POLYGON_MAINNET
-    );
-
-    const wethSigner = await ethers.getSigner(WETH_WHALE_ADDRESS_IN_POLYGON);
-
-    const usdcSigner = await ethers.getSigner(USDC_WHALE_ADDRESS_IN_POLYGON);
-
-    const wethContract = await ethers.getContractAt("IERC20", WETH);
-
-    const usdcContract = await ethers.getContractAt("IERC20", USDC);
-
-    await wethContract
-      .connect(wethSigner)
-      .transfer(quickSwapStrategy.address, 10000 * 10 ** 6);
-
-    await usdcContract
-      .connect(usdcSigner)
-      .transfer(quickSwapStrategy.address, 10000 * 10 ** 6);
-
-    await wethContract.approve(quickSwapStrategy.address, 10000 * 10 ** 6);
-
-    await usdcContract.approve(quickSwapStrategy.address, 10000 * 10 ** 6);
-
-    // when
-    const addLiquidityResult = await quickSwapStrategy.mintWithETH(
-      USDC,
-      10 * 10 ** 6,
-      0,
-      0,
-      quickSwapStrategy.address,
-      {
-        value: ethers.BigNumber.from((10 * 10 ** 18).toString()),
-      }
-    );
-
-    // then
-    expect(addLiquidityResult).to.not.throws;
-  });
-
-  it("should be operated removeLiquidityWithETH Method", async () => {
-    // given
-    const QuickSwapStrategy = await hre.ethers.getContractFactory(
-      "QuickSwapStrategy"
-    );
-
-    const quickSwapStrategy = await QuickSwapStrategy.deploy(
-      QUICK_SWAP_ROUTER_02_ADDRESS_IN_POLYGON_MAINNET
-    );
-
-    const usdcSigner = await ethers.getSigner(USDC_WHALE_ADDRESS_IN_POLYGON);
-
-    const usdcContract = await ethers.getContractAt("IERC20", USDC);
-
-    const lpTokenContract = await ethers.getContractAt(
-      "IERC20",
-      QUICKSWAP_ETH_USDC_POOL_IN_POLYGON
-    );
-
-    await usdcContract
-      .connect(usdcSigner)
-      .transfer(quickSwapStrategy.address, 1000 * 10 ** 6);
-
-    await usdcContract.approve(quickSwapStrategy.address, 10000 * 10 ** 6);
-
-    // when
-    const addLiquidityResult = await quickSwapStrategy.mintWithETH(
-      USDC,
-      10 * 10 ** 6,
-      0,
-      0,
-      FAKE_ACCOUNT_ZERO,
-      {
-        value: ethers.BigNumber.from((10 * 10 ** 18).toString()),
-      }
-    );
-
-    await lpTokenContract.approve(
-      quickSwapStrategy.address,
-      10000000 * 10 ** 6
-    );
-
-    const removeLiquidityResult = await quickSwapStrategy.burnWithETH(
-      USDC,
-      QUICKSWAP_ETH_USDC_POOL_IN_POLYGON,
-      "100000",
-      "100000",
-      quickSwapStrategy.address,
-      "3060630597540"
-    );
-
-    // then
-    expect(addLiquidityResult).to.not.throws;
-    expect(removeLiquidityResult).to.not.throws;
-  });
-
-  it("should be not operated If user is not Owner", async () => {
-    // given
-    const QuickSwapStrategy = await hre.ethers.getContractFactory(
-      "QuickSwapStrategy"
-    );
-
-    const quickSwapStrategy = await QuickSwapStrategy.deploy(
-      QUICK_SWAP_ROUTER_02_ADDRESS_IN_POLYGON_MAINNET
-    );
-    const otherSigner = await ethers.getSigner(FAKE_ACCOUNT_ONE);
-
-    // when
-    const notOwnerUserCallSetRouterMethod = await quickSwapStrategy
-      .connect(otherSigner)
-      .setRouter(FAKE_ACCOUNT_ONE);
-
-    // then
-    // TODO Chai With Hardhat don't provide Promise Assert.
-    expect(notOwnerUserCallSetRouterMethod).to.be.throws();
+    const result = await chainLinkPriceOracle.getLatestPrice(WETH);
+    const btc = await chainLinkPriceOracle.getLatestPrice(WBTC);
+    const usdc = await chainLinkPriceOracle.getLatestPrice(USDC);
+    console.log(result.toNumber());
+    console.log(btc.toNumber());
+    console.log(usdc.toNumber());
   });
 });
