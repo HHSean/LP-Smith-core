@@ -9,7 +9,24 @@ const accountZero = "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266";
 const QUICK_SWAP_ROUTER_02_ADDRESS_IN_POLYGON_MAINNET =
   "0xa5E0829CaCEd8fFDD4De3c43696c57F7D7A678ff";
 
+const USDC = "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174";
+const USDT = "0xc2132D05D31c914a87C6611C10748AEb04B58e8F";
+
+
 describe("Quick Swap Test", () => {
+  it("test", async () => {
+    const QuickSwapStrategy = await hre.ethers.getContractFactory(
+      "QuickSwapStrategy"
+    );
+    const contract = await QuickSwapStrategy.deploy(
+      QUICK_SWAP_ROUTER_02_ADDRESS_IN_POLYGON_MAINNET
+    );
+    await contract.deployed();
+
+    
+
+  });
+  /*
   it("should be operated addLiquidity Method", async () => {
     const QuickSwapStrategy = await hre.ethers.getContractFactory(
       "QuickSwapStrategy"
@@ -143,5 +160,5 @@ describe("Quick Swap Test", () => {
     const result = await quickSwapStrategy.owner();
 
     console.log(result);
-  });
+  });*/
 });

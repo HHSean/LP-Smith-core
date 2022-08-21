@@ -30,4 +30,15 @@ interface IStrategy {
     ) external returns (uint amountA, uint amountB);
 
     function setRouter(address _newRouterAddress) external;
+
+    function getEstimatedLpTokenAmount(
+        address _liquidityToken,
+        uint _amountADesired,
+        uint _amountBDesired
+    ) external view returns (uint liquidity);
+
+    function getInputAmountsForLpToken(
+        address lpTokenAddress,
+        uint outputAmount
+    ) external view returns (uint _amountA, uint _amountB);
 }
