@@ -153,26 +153,18 @@ contract QuickSwapStrategy is IStrategy, Ownable {
         }
         require(liquidity > 0, "UniswapV2: INSUFFICIENT_LIQUIDITY_MINTED");
     }
-/*
+
     function getInputAmountsForLpToken(
         address lpTokenAddress,
         uint outputAmount
     ) public view returns (uint _amountA, uint _amountB) {
-        uint liquidityTokenTotalSupply = IUniswapV2Pair(_liquidityToken)
+        uint liquidityTokenTotalSupply = IUniswapV2Pair(lpTokenAddress)
             .totalSupply();
         (uint112 _reserve0, uint112 _reserve1, ) = IUniswapV2Pair(
-            _liquidityToken
+            lpTokenAddress
         ).getReserves();
 
-        if (liquidityTokenTotalSupply == 0) {
-            liquidity = Math.sqrt(_amountADesired.mul(_amountBDesired)).sub(
-                MINIMUM_LIQUIDITY
-            );
-        } else {
-            liquidity = Math.min(
-                _amountADesired.mul(liquidityTokenTotalSupply) / _reserve0,
-                _amountBDesired.mul(liquidityTokenTotalSupply) / _reserve1
-            );
-        }
-    }*/
+        _amountA = outputAmount.mul(_reserve0).div(liquidityTokenTotalSupply);
+        _amountB = outputAmount.mul(_reserve1).div(liquidityTokenTotalSupply);
+    }
 }

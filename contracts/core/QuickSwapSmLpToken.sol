@@ -235,8 +235,12 @@ contract QuickSwapSmLpToken is ISmLpToken, ERC20, Ownable {
         returns (bool sign, uint256 _pendingOnSale)
     {}
 
-    function getPositionValue(address user) external view {
+    function getDepositValue(address user) public view returns(uint256){
         // TODO
+    }
+
+    function getBorrowableValue(address user) public view returns(uint256){
+
     }
 
     function _beforeMint(uint256 liquidity)

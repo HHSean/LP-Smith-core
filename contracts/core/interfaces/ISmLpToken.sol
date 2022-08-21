@@ -18,7 +18,9 @@ interface ISmLpToken is IERC20 {
         view
         returns (bool sign, uint256 _pendingOnSale);
 
-    function getPositionValue(address user) external view;
+    function getDepositValue(address user) external view returns(uint256);
+
+    function getBorrowableValue(address user) external view returns(uint256);
 
     function tokenX() external view returns (address);
 
