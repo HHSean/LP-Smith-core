@@ -210,7 +210,7 @@ contract QuickSwapSmLpToken is ISmLpToken, ERC20, Ownable {
     function realizeLp(
         address user,
         uint256 amount // LP token
-    ) external onlyLendingPool returns (bool _isCloseAll) {
+    ) external onlyLendingPool {
         require(amount <= balanceOf(address(this)), "Insufficient smLpToken");
         require(
             amount <=
