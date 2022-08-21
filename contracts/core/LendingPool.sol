@@ -3,6 +3,7 @@ pragma solidity ^0.8.9;
 import {ILendingPool} from "./interfaces/ILendingPool.sol";
 import {ISmLpToken} from "./interfaces/ISmLpToken.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {IFactory} from "./interfaces/IFactory.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
 // TODO Noah

@@ -4,6 +4,7 @@ import {ILendingPool} from "./interfaces/ILendingPool.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {IFactory} from "./interfaces/IFactory.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
 // TODO: Noah
@@ -14,6 +15,7 @@ contract SmToken is ISmToken, Ownable {
     string private _symbol;
     address _pool;
     address public override UNDERLYING_ASSET_ADDRESS;
+    address public factory;
 
     uint256 public override totalSupply;
     mapping(address => uint256) public override balanceOf;
@@ -30,12 +32,11 @@ contract SmToken is ISmToken, Ownable {
     }
 
     modifier onlyLendingPool() {
-        require(msg.sender == address(_pool), "Not called by lending pool");
+        require(
+            msg.sender == IFactory(factory).getLendingPool(),
+            "Not called by lending pool"
+        );
         _;
-    }
-
-    function setLendingPool(address pool_) external onlyOwner {
-        _pool = pool_;
     }
 
     function transfer(address to, uint256 amount) external returns (bool) {
