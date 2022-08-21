@@ -3,6 +3,7 @@ import {ISmLpToken} from "./interfaces/ISmLpToken.sol";
 import {ILendingPool} from "./interfaces/ILendingPool.sol";
 import {IUniswapV2Pair} from "./interfaces/IUniswapV2Pair.sol";
 import {IStrategy} from "./interfaces/IStrategy.sol";
+import {IPriceOracle} from "./interfaces/IPriceOracle.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
@@ -14,6 +15,7 @@ import "@openzeppelin/contracts/utils/math/Math.sol";
 // TODO Oliver
 contract QuickSwapSmLpToken is ISmLpToken, ERC20, Ownable {
     using SafeMath for uint256;
+    using SafeMath for uint112;
     using SafeERC20 for IERC20;
 
     string private _name;
@@ -27,11 +29,8 @@ contract QuickSwapSmLpToken is ISmLpToken, ERC20, Ownable {
     address public override tokenX;
     address public override tokenY;
 
-    uint256 public totalInitX;
-    uint256 public totalInitY;
-
-    uint256 public onSaleX;
-    uint256 public onSaleY;
+    uint256 public pendingOnSaleX;
+    uint256 public pendingOnSaleY;
 
     struct UserStatus {
         uint256 totalLpToken;
@@ -41,6 +40,7 @@ contract QuickSwapSmLpToken is ISmLpToken, ERC20, Ownable {
     }
 
     mapping(address => UserStatus) userStatus;
+    UserStatus public totalStatus;
 
     constructor(
         string memory name_,
@@ -122,8 +122,9 @@ contract QuickSwapSmLpToken is ISmLpToken, ERC20, Ownable {
         userStatus[user].initX = userStatus[user].initX.add(_amountX);
         userStatus[user].initY = userStatus[user].initY.add(_amountY);
 
-        totalInitX = totalInitX.add(_amountX);
-        totalInitY = totalInitY.add(_amountY);
+        totalStatus.totalLpToken = totalStatus.totalLpToken.add(amount);
+        totalStatus.initX = totalStatus.initX.add(_amountX);
+        totalStatus.initY = totalStatus.initY.add(_amountY);
 
         _mint(user, amount);
     }
@@ -163,13 +164,21 @@ contract QuickSwapSmLpToken is ISmLpToken, ERC20, Ownable {
         userStatus[user].totalLpToken = userStatus[user].totalLpToken.sub(
             amount
         );
+
+        uint256 prevRealizedLpToken = userStatus[user].realizedLpToken;
+
         userStatus[user].realizedLpToken = _amountToMint == 0
             ? userStatus[user].realizedLpToken.sub(amount)
             : uint(0);
         userStatus[user].initX = userStatus[user].initX.sub(_reducedX);
         userStatus[user].initY = userStatus[user].initY.sub(_reducedY);
-        totalInitX = totalInitX.sub(_reducedX);
-        totalInitY = totalInitY.sub(_reducedY);
+
+        totalStatus.initX = totalStatus.initX.sub(_reducedX);
+        totalStatus.initY = totalStatus.initY.sub(_reducedY);
+        totalStatus.totalLpToken = totalStatus.totalLpToken.sub(amount);
+        totalStatus.realizedLpToken = totalStatus.realizedLpToken.sub(
+            prevRealizedLpToken.sub(userStatus[user].realizedLpToken)
+        );
 
         _isCloseAll = userStatus[user].totalLpToken == 0;
 
@@ -241,19 +250,70 @@ contract QuickSwapSmLpToken is ISmLpToken, ERC20, Ownable {
     }
     */
 
-    function getDebt(address tokenAddress)
-        external
+    function getDebt(address tokenAddress) public view returns (uint256 _debt) {
+        require(
+            tokenAddress == tokenX || tokenAddress == tokenY,
+            "Invalid Token Address"
+        );
+        if (tokenAddress == tokenX) {
+            (_debt, , ) = _getDebt();
+        } else {
+            (, _debt, ) = _getDebt();
+        }
+    }
+
+    function _getDebt()
+        internal
         view
-        returns (uint256 _debt)
+        returns (
+            uint256 _debtTokenX,
+            uint256 _debtTokenY,
+            uint256 _usdcValuePerLp
+        )
     {
-        // TODO
+        (uint112 _reserve0, uint112 _reserve1, ) = IUniswapV2Pair(
+            UNDERLYING_ASSET_ADDRESS
+        ).getReserves();
+
+        IPriceOracle _priceOracle = IPriceOracle(
+            IFactory(FACTORY_CONTRACT_ADDRESS).getPriceOracle()
+        );
+
+        uint256 _totalSupply = IUniswapV2Pair(UNDERLYING_ASSET_ADDRESS)
+            .totalSupply();
+
+        uint256 _usdcPriceX = _priceOracle.getAssetPrice(tokenX);
+        uint256 _usdcPriceY = _priceOracle.getAssetPrice(tokenY);
+
+        uint256 liquidity = Math.sqrt(_reserve0.mul(_reserve1));
+
+        uint256 _virtualX = liquidity.mul(
+            Math.sqrt(_usdcPriceY.div(_usdcPriceX))
+        );
+        uint256 _virtualY = liquidity.mul(
+            Math.sqrt(_usdcPriceX.div(_usdcPriceY))
+        );
+
+        _debtTokenX = _virtualX
+            .mul(totalStatus.totalLpToken.sub(totalStatus.realizedLpToken))
+            .div(_totalSupply);
+        _debtTokenY = _virtualY
+            .mul(totalStatus.totalLpToken.sub(totalStatus.realizedLpToken))
+            .div(_totalSupply);
+        _usdcValuePerLp = liquidity
+            .mul(2)
+            .mul(Math.sqrt(_usdcPriceX.mul(_usdcPriceY)))
+            .div(_totalSupply);
     }
 
     function getPotentialOnSale(address asset)
         external
         view
         returns (bool sign, uint256 _potentialOnSale)
-    {}
+    {
+        require(asset == tokenX || asset == tokenY, "Invalid Token Address");
+        uint256 debt;
+    }
 
     function getPendingOnSale(address asset)
         external
@@ -263,10 +323,13 @@ contract QuickSwapSmLpToken is ISmLpToken, ERC20, Ownable {
     {}
 
     function getDepositValue(address user) public view returns (uint256) {
-        // TODO
+        (, , uint256 lpPrice) = _getDebt();
+        return userStatus[user].totalLpToken.mul(lpPrice);
     }
 
-    function getBorrowableValue(address user) public view returns (uint256) {}
+    function getBorrowableValue(address user) public view returns (uint256) {
+        return getDepositValue(user).mul(collateralRate).div(10000);
+    }
 
     function _beforeMint(uint256 liquidity)
         internal
@@ -277,7 +340,7 @@ contract QuickSwapSmLpToken is ISmLpToken, ERC20, Ownable {
         address lendingPoolAddress = IFactory(FACTORY_CONTRACT_ADDRESS)
             .getLendingPool();
 
-        IERC20(tokenX).transfer(lendingPoolAddress, _amountX);
-        IERC20(tokenY).transfer(lendingPoolAddress, _amountY);
+        IERC20(tokenX).approve(lendingPoolAddress, _amountX);
+        IERC20(tokenY).approve(lendingPoolAddress, _amountY);
     }
 }
