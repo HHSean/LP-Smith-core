@@ -62,6 +62,9 @@ contract LendingPool is ILendingPool, LendingPoolStorage {
     ) external override {
         address smLpTokenAddress = address(smLpTokenMap[lpTokenAddress]);
         // transfer lpToken from msg.sender to smLpTokenAddress
+        console.log("balance check");
+        console.log(amount);
+        console.log(IERC20(lpTokenAddress).balanceOf(msg.sender));
         IERC20(lpTokenAddress).transferFrom(
             msg.sender,
             smLpTokenAddress,
