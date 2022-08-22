@@ -41,86 +41,6 @@ contract LendingPool is ILendingPool, LendingPoolStorage {
         );
     }
 
-    function getLpDebts(address asset)
-        external
-        view
-        override
-        returns (uint256 _debt)
-    {
-        // iterate smLpTokens and aggregate total debt
-        ISmLpToken[] storage smLpTokenList = smLpTokenListPerAsset[asset];
-        uint256 length = smLpTokenList.length;
-        for (uint i = 0; i < length; i++) {
-            _debt += ISmLpToken(address(smLpTokenList[i])).getDebt(asset);
-        }
-    }
-
-    function getPotentialOnSale(address asset)
-        external
-        view
-        returns (bool _sign, uint256 _potentialOnSale)
-    {
-        // iterate smLpTokens and sum up potential on sale
-        ISmLpToken[] storage smLpTokenList = smLpTokenListPerAsset[asset];
-        uint256 length = smLpTokenList.length;
-        uint256 positivePotentialOnSale;
-        uint256 negativePotentialOnSale;
-        for (uint i = 0; i < length; i++) {
-            (bool sign, uint256 potentialOnSale) = ISmLpToken(
-                address(smLpTokenList[i])
-            ).getPotentialOnSale(asset);
-            if (sign == true) {
-                positivePotentialOnSale += potentialOnSale;
-            } else {
-                negativePotentialOnSale += potentialOnSale;
-            }
-        }
-        if (positivePotentialOnSale >= negativePotentialOnSale) {
-            // positive sign
-            _potentialOnSale = positivePotentialOnSale.sub(
-                negativePotentialOnSale
-            );
-            _sign = true;
-        } else {
-            // negative sign
-            _potentialOnSale = negativePotentialOnSale.sub(
-                positivePotentialOnSale
-            );
-            _sign = false;
-        }
-    }
-
-    function getPendingOnSale(address asset)
-        external
-        view
-        returns (bool _sign, uint256 _pendingOnSale)
-    {
-        // iterate smLpTokens and sum up potential on sale
-        ISmLpToken[] storage smLpTokenList = smLpTokenListPerAsset[asset];
-        uint256 length = smLpTokenList.length;
-        uint256 positivePendingOnSale;
-        uint256 negativePendingOnSale;
-        for (uint i = 0; i < length; i++) {
-            (bool sign, uint256 pendingOnSale) = ISmLpToken(
-                address(smLpTokenList[i])
-            ).getPendingOnSale(asset);
-            if (sign == true) {
-                positivePendingOnSale += pendingOnSale;
-            } else {
-                negativePendingOnSale += pendingOnSale;
-            }
-        }
-        if (positivePendingOnSale >= negativePendingOnSale) {
-            // positive sign
-            _pendingOnSale = positivePendingOnSale.sub(negativePendingOnSale);
-            _sign = true;
-        } else {
-            // negative sign
-            _pendingOnSale = negativePendingOnSale.sub(positivePendingOnSale);
-            _sign = false;
-        }
-    }
-
     function depositERC20LpToken(
         address lpTokenAddress,
         uint256 amount // lp token qty
@@ -136,8 +56,9 @@ contract LendingPool is ILendingPool, LendingPoolStorage {
         (uint256 amountX, uint256 amountY, bool isFirstDeposit) = ISmLpToken(
             smLpTokenAddress
         ).mint(msg.sender, amount);
+
         if (isFirstDeposit) {
-            smLpTokenDepositListPerUser[msg.sender].push(smLpTokenAddress); // TODO check this... If I can push user like this
+            smLpTokenDepositListPerUser[msg.sender].push(smLpTokenAddress);
         }
 
         address tokenX = ISmLpToken(smLpTokenAddress).tokenX();
@@ -145,49 +66,6 @@ contract LendingPool is ILendingPool, LendingPoolStorage {
 
         address tokenY = ISmLpToken(smLpTokenAddress).tokenY();
         _transferReserveToSmToken(tokenY, smLpTokenAddress, amountY, true);
-    }
-
-    function getDepositedLpValue(address user)
-        public
-        returns (uint256 _depositValue)
-    {
-        // TODO
-        address[] storage smLpTokenList = smLpTokenDepositListPerUser[user];
-        uint256 length = smLpTokenList.length;
-        for (uint i = 0; i < length; i++) {
-            /*
-            (bool sign, uint256 pendingOnSale) = ISmLpToken(
-                smLpTokenList[i]
-            )*/
-        }
-    }
-
-    function getBorrowableValue(address user)
-        public
-        returns (uint256 _borrowableValue)
-    {
-        // TODO
-    }
-
-    function getBorrowedValue(address user)
-        public
-        view
-        returns (uint256 _borrowedValue)
-    {
-        IPriceOracle priceOracle = IPriceOracle(
-            IFactory(factory).getPriceOracle()
-        );
-        address[] storage borrowList = reserveBorrowListPerUser[user];
-        uint256 length = borrowList.length;
-        for (uint256 i = 0; i < length; i++) {
-            address asset = borrowList[i];
-            uint256 price = priceOracle.getAssetPrice(asset);
-            _borrowedValue += GeneralLogic.getUnderlyingValue(
-                uint248(_userDebtDatas[asset][user].borrowedAmount),
-                _reserves[asset].reserveDecimals,
-                price
-            );
-        }
     }
 
     function withdrawERC20LpToken(
@@ -207,7 +85,9 @@ contract LendingPool is ILendingPool, LendingPoolStorage {
     ) external override {
         // transfer asset to smToken
         _transferReserveToSmToken(asset, msg.sender, amount, true);
-        // TODO mint smToken -> debt calculation held inside here (to get smToken exchage rate)
+        address smTokenAddress = address(smLpTokenMap[asset]);
+        uint256 liquidityIndex = getLiquidityIndex(asset);
+        ISmToken(smTokenAddress).mint(msg.sender, amount, liquidityIndex);
     }
 
     /**
@@ -217,7 +97,9 @@ contract LendingPool is ILendingPool, LendingPoolStorage {
         address asset,
         uint256 amount // asset unit (not smToken unit)
     ) external override validWithdrawal returns (uint256) {
-        // TODO burn smToken -> debt calculation held inside here (to get smToken exchange rate)
+        uint256 liquidityIndex = getLiquidityIndex(asset);
+        address smTokenAddress = smTokenMap[asset];
+        ISmToken(smTokenAddress).burn(msg.sender, amount, liquidityIndex);
         // transfer asset from smToken to "to"
         _transferReserveFromSmToken(asset, msg.sender, amount, true);
     }
@@ -298,4 +180,189 @@ contract LendingPool is ILendingPool, LendingPoolStorage {
             reserve.borrowAmount += amount;
         }
     }
+
+    function getDepositedLpValue(address user)
+        public
+        view
+        returns (uint256 _depositValue)
+    {
+        address[] storage smLpTokenList = smLpTokenDepositListPerUser[user];
+        uint256 length = smLpTokenList.length;
+        for (uint i = 0; i < length; i++) {
+            _depositValue += ISmLpToken(smLpTokenList[i]).getDepositValue(user);
+        }
+    }
+
+    function getBorrowableValue(address user)
+        public
+        view
+        returns (uint256 _borrowableValue)
+    {
+        address[] storage smLpTokenList = smLpTokenDepositListPerUser[user];
+        uint256 length = smLpTokenList.length;
+        for (uint i = 0; i < length; i++) {
+            _borrowableValue += ISmLpToken(smLpTokenList[i]).getBorrowableValue(
+                    user
+                );
+        }
+    }
+
+    function getBorrowedValue(address user)
+        public
+        view
+        returns (uint256 _borrowedValue)
+    {
+        IPriceOracle priceOracle = IPriceOracle(
+            IFactory(factory).getPriceOracle()
+        );
+        address[] storage borrowList = reserveBorrowListPerUser[user];
+        uint256 length = borrowList.length;
+        for (uint256 i = 0; i < length; i++) {
+            address asset = borrowList[i];
+            uint256 price = priceOracle.getAssetPrice(asset);
+            _borrowedValue += GeneralLogic.getUnderlyingValue(
+                uint248(_userDebtDatas[asset][user].borrowedAmount),
+                _reserves[asset].reserveDecimals,
+                price
+            );
+        }
+    }
+
+    function _getLpDebts(address asset, ISmLpToken[] storage smLpTokenList)
+        internal
+        view
+        returns (uint256 _debt)
+    {
+        // iterate smLpTokens and aggregate total debt
+        uint256 length = smLpTokenList.length;
+        for (uint i = 0; i < length; i++) {
+            _debt += ISmLpToken(address(smLpTokenList[i])).getDebt(asset);
+        }
+    }
+
+    function _getPotentialOnSale(
+        address asset,
+        ISmLpToken[] storage smLpTokenList
+    ) internal view returns (bool _sign, uint256 _potentialOnSale) {
+        // iterate smLpTokens and sum up potential on sale
+        uint256 length = smLpTokenList.length;
+        uint256 positivePotentialOnSale;
+        uint256 negativePotentialOnSale;
+        for (uint i = 0; i < length; i++) {
+            (bool sign, uint256 potentialOnSale) = ISmLpToken(
+                address(smLpTokenList[i])
+            ).getPotentialOnSale(asset);
+            if (sign == true) {
+                positivePotentialOnSale += potentialOnSale;
+            } else {
+                negativePotentialOnSale += potentialOnSale;
+            }
+        }
+        if (positivePotentialOnSale >= negativePotentialOnSale) {
+            // positive sign
+            _potentialOnSale = positivePotentialOnSale.sub(
+                negativePotentialOnSale
+            );
+            _sign = true;
+        } else {
+            // negative sign
+            _potentialOnSale = negativePotentialOnSale.sub(
+                positivePotentialOnSale
+            );
+            _sign = false;
+        }
+    }
+
+    function _getPendingOnSale(
+        address asset,
+        ISmLpToken[] storage smLpTokenList
+    ) internal view returns (bool _sign, uint256 _pendingOnSale) {
+        // iterate smLpTokens and sum up potential on sale
+        uint256 length = smLpTokenList.length;
+        uint256 positivePendingOnSale;
+        uint256 negativePendingOnSale;
+        for (uint i = 0; i < length; i++) {
+            (bool sign, uint256 pendingOnSale) = ISmLpToken(
+                address(smLpTokenList[i])
+            ).getPendingOnSale(asset);
+            if (sign == true) {
+                positivePendingOnSale += pendingOnSale;
+            } else {
+                negativePendingOnSale += pendingOnSale;
+            }
+        }
+        if (positivePendingOnSale >= negativePendingOnSale) {
+            // positive sign
+            _pendingOnSale = positivePendingOnSale.sub(negativePendingOnSale);
+            _sign = true;
+        } else {
+            // negative sign
+            _pendingOnSale = negativePendingOnSale.sub(positivePendingOnSale);
+            _sign = false;
+        }
+    }
+
+    function getLiquidityIndex(address asset)
+        public
+        view
+        returns (uint256 _liquidityIndex)
+    {
+        ReserveData storage reserve = _reserves[asset];
+        ISmLpToken[] storage smLpTokenList = smLpTokenListPerAsset[asset];
+        _liquidityIndex = reserve.depositAmount;
+        _liquidityIndex -= _getLpDebts(asset, smLpTokenList);
+        (bool sign0, uint256 potentialOnSale) = _getPotentialOnSale(
+            asset,
+            smLpTokenList
+        );
+        if (sign0) {
+            _liquidityIndex += potentialOnSale;
+        } else {
+            _liquidityIndex -= potentialOnSale;
+        }
+        (bool sign1, uint256 pendingOnSale) = _getPendingOnSale(
+            asset,
+            smLpTokenList
+        );
+        if (sign1) {
+            _liquidityIndex += pendingOnSale;
+        } else {
+            _liquidityIndex -= pendingOnSale;
+        }
+    }
+
+    function swap(
+        address lpTokenAddress,
+        address tokenFrom,
+        address tokenTo,
+        uint256 amount,
+        uint256 minimumReceive
+    ) external returns (uint256 _swapOutput) {
+        _transferReserveToSmToken(tokenFrom, msg.sender, amount, true);
+
+        IPriceOracle priceOracle = IPriceOracle(
+            IFactory(factory).getPriceOracle()
+        );
+        uint256 tokenFromPrice = priceOracle.getAssetPrice(tokenFrom);
+        uint256 tokenToPrice = priceOracle.getAssetPrice(tokenTo);
+        uint8 tokenFromDecimals = _reserves[tokenFrom].reserveDecimals;
+        uint8 tokenToDecimals = _reserves[tokenTo].reserveDecimals;
+
+        _swapOutput = amount
+            .mul(tokenFromPrice)
+            .mul(10**tokenToDecimals)
+            .div(tokenToPrice)
+            .div(10**tokenFromDecimals);
+
+        _transferReserveFromSmToken(tokenTo, msg.sender, _swapOutput, true);
+        // TOOD call ISmLpToken swap -> update onSale
+        ISmLpToken(smLpTokenMap[lpTokenAddress]).decreasePendingOnSale(
+            tokenFrom,
+            amount
+        );
+        require(_swapOutput >= minimumReceive, "Received not much");
+    }
+
+    // TODO
+    function liquidation() external {}
 }

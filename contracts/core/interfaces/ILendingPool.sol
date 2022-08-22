@@ -2,27 +2,6 @@ pragma solidity ^0.8.9;
 
 interface ILendingPool {
     /**
-     * @param asset The address of the ERC20 asset
-     **/
-    function getLpDebts(address asset) external view returns (uint256 _debt);
-
-    /**
-     * @param asset The address of the ERC20 asset
-     **/
-    function getPotentialOnSale(address asset)
-        external
-        view
-        returns (bool _sign, uint256 _potentialOnSale);
-
-    /**
-     * @param asset The address of the ERC20 asset
-     **/
-    function getPendingOnSale(address asset)
-        external
-        view
-        returns (bool _sign, uint256 _pendingOnSale);
-
-    /**
      * @dev Deposits an `amount` of lp token into the reserve, receiving in return overlying smTokens.
      * - E.g. User deposits 100 USDC/ETH and gets in return 100 smUSDC
      * @param asset The address of the underlying asset to deposit
@@ -82,4 +61,19 @@ interface ILendingPool {
     function repay(address asset, uint256 amount) external returns (uint256);
 
     function requestFund(address asset, uint256 amount) external;
+
+    function getLiquidityIndex(address asset)
+        external
+        view
+        returns (uint256 _liquidityIndex);
+
+    function getDepositedLpValue(address user)
+        external
+        view
+        returns (uint256 _depositValue);
+
+    function getBorrowableValue(address user)
+        external
+        view
+        returns (uint256 _borrowableValue);
 }
