@@ -1,11 +1,5 @@
 import * as hre from "hardhat";
 
-// Fake Account
-const FAKE_ACCOUNT_ZERO = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266";
-
-const FAKE_ACCOUNT_ONE = "0x70997970C51812dc3A010C7d01b50e0d17dc79C8";
-
-// Router Address
 const QUICK_SWAP_ROUTER_02_ADDRESS_IN_POLYGON_MAINNET =
   "0xa5E0829CaCEd8fFDD4De3c43696c57F7D7A678ff";
 
@@ -66,207 +60,75 @@ const WBTC = "0x1bfd67037b42cf73acf2047067bd4f2c47d9bfd6";
 const QUICKSWAP_USDC_USDT_POOL_IN_POLYGON =
   "0x2cf7252e74036d1da831d11089d326296e64a728";
 
+const delay = async (ms: number) => {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+};
+
 async function deploy() {
   const QuickSwapStrategy = await hre.ethers.getContractFactory(
     "QuickSwapStrategy"
   );
-
   const quickSwapStrategy = await QuickSwapStrategy.deploy(
     QUICK_SWAP_ROUTER_02_ADDRESS_IN_POLYGON_MAINNET
   );
-
   await quickSwapStrategy.deployed();
-  /*
-              const ChainLinkPriceOracle = await hre.ethers.getContractFactory(
-                "ChainLinkPriceOracle"
-              );
-            
-              const chainLinkPriceOracle = await ChainLinkPriceOracle.deploy();
-            
-              await chainLinkPriceOracle.deployed();
-            */
+  await delay(3000);
+
   const ChainLinkPriceOracle = await hre.ethers.getContractFactory(
     "PriceOracle"
   );
-
   const chainLinkPriceOracle = await ChainLinkPriceOracle.deploy();
-
   await chainLinkPriceOracle.deployed();
-  await chainLinkPriceOracle.setAssetPrice(
+  await delay(3000);
+
+  await chainLinkPriceOracle.setAssetToPriceFeed(
     WETH,
-    hre.ethers.utils.parseUnits("1800", 18)
+    "0xF9680D99D6C9589e2a93a78A04A279e509205945"
   );
-  await chainLinkPriceOracle.setAssetPrice(
+  await delay(3000);
+
+  await chainLinkPriceOracle.setAssetToPriceFeed(
     USDC,
-    hre.ethers.utils.parseUnits("1", 18)
+    "0xfE4A8cc5b5B2366C1B58Bea3858e81843581b2F7"
   );
+  await delay(3000);
 
   const GeneralLogic = await hre.ethers.getContractFactory("GeneralLogic");
-
   const generalLogic = await GeneralLogic.deploy();
-
   await generalLogic.deployed();
+  await delay(3000);
 
   const Factory = await hre.ethers.getContractFactory("Factory");
-
   const factory = await Factory.deploy();
-
   await factory.deployed();
+  await delay(3000);
 
   const LendingPool = await hre.ethers.getContractFactory("LendingPool", {
     libraries: {
       GeneralLogic: generalLogic.address,
     },
   });
-
   const lendingPool = await LendingPool.deploy(factory.address);
-
   await lendingPool.deployed();
+  await delay(3000);
 
   await factory.setPriceOracle(chainLinkPriceOracle.address);
+  await delay(3000);
+
   await factory.setLendingPool(lendingPool.address);
+  await delay(3000);
 
-  const whaleArray = [
-    USDC_WHALE_ADDRESS_IN_POLYGON,
-    USDT_WHALE_ADDRESS_IN_POLYGON,
-    MATIC_WHALE_ADDRESS_IN_POLYGON,
-    WETH_WHALE_ADDRESS_IN_POLYGON,
-    QUICKSWAP_ETH_USDC_LP_TOKEN_WHALE,
-    QUICKSWAP_BTC_USDC_LP_TOKEN_WHALE,
-    QUICKSWAP_ETH_BTC_LP_TOKEN_WHALE,
-    WBTC_WHALE_ADDRESS_IN_POLYGON,
-  ];
-
-  const whaleRequestPromiseAll: any[] = [];
-
-  for (let i = 0; i < whaleArray.length; i++) {
-    whaleRequestPromiseAll.push(
-      hre.network.provider.request({
-        method: "hardhat_impersonateAccount",
-        params: [whaleArray[i]],
-      })
-    );
-  }
-
-  await Promise.all(whaleRequestPromiseAll);
-
-  const usdcSigner = await hre.ethers.getSigner(USDC_WHALE_ADDRESS_IN_POLYGON);
-  const usdtSigner = await hre.ethers.getSigner(USDT_WHALE_ADDRESS_IN_POLYGON);
-  const wethSigner = await hre.ethers.getSigner(WETH_WHALE_ADDRESS_IN_POLYGON);
-  const wbtcSigner = await hre.ethers.getSigner(WBTC_WHALE_ADDRESS_IN_POLYGON);
-  const defaultSigner = await hre.ethers.getSigner(FAKE_ACCOUNT_ONE);
-  const ethUsdcLpTokenSigner = await hre.ethers.getSigner(
-    QUICKSWAP_ETH_USDC_LP_TOKEN_WHALE
-  );
-  const btcUsdcLpTokenSigner = await hre.ethers.getSigner(
-    QUICKSWAP_BTC_USDC_LP_TOKEN_WHALE
-  );
-  const ethBtcLpTokenSigner = await hre.ethers.getSigner(
-    QUICKSWAP_ETH_BTC_LP_TOKEN_WHALE
-  );
-
-  const usdcContract = await hre.ethers.getContractAt("IERC20", USDC);
-  const usdtContract = await hre.ethers.getContractAt("IERC20", USDT);
   const wethContract = await hre.ethers.getContractAt("IERC20", WETH);
-  const wbtcContract = await hre.ethers.getContractAt("IERC20", WBTC);
 
   const ethUSDCLpTokenContract = await hre.ethers.getContractAt(
     "IERC20",
     QUICKSWAP_ETH_USDC_POOL_IN_POLYGON
   );
-  const btcUsdcLpTokenContract = await hre.ethers.getContractAt(
-    "IERC20",
-    QUICKSWAP_BTC_USDC_POOL_IN_POLYGON
-  );
-  const ethBtcLpTokenContract = await hre.ethers.getContractAt(
-    "IERC20",
-    QUICKSWAP_ETH_BTC_POOL_IN_POLYGON
-  );
-
-  console.log("check");
-  await ethUSDCLpTokenContract
-    .connect(ethUsdcLpTokenSigner)
-    .transfer(FAKE_ACCOUNT_ZERO, hre.ethers.utils.parseUnits("2", 14));
-  console.log("checkf");
-  await btcUsdcLpTokenContract
-    .connect(btcUsdcLpTokenSigner)
-    .transfer(FAKE_ACCOUNT_ZERO, hre.ethers.utils.parseUnits("10", 6));
-  console.log("checkff");
-  await ethBtcLpTokenContract
-    .connect(ethBtcLpTokenSigner)
-    .transfer(FAKE_ACCOUNT_ZERO, hre.ethers.utils.parseUnits("10", 6));
-  console.log("checkk");
-  await usdcContract
-    .connect(usdcSigner)
-    .transfer(FAKE_ACCOUNT_ONE, 100000 * 10 ** 6);
-
-  await usdcContract
-    .connect(usdcSigner)
-    .transfer(FAKE_ACCOUNT_ZERO, 100000 * 10 ** 6);
-
-  await usdcContract
-    .connect(usdcSigner)
-    .transfer(quickSwapStrategy.address, 100000 * 10 ** 6);
-
-  await wethContract
-    .connect(wethSigner)
-    .transfer(FAKE_ACCOUNT_ONE, hre.ethers.utils.parseUnits("10", 18));
-  await wethContract
-    .connect(wethSigner)
-    .transfer(FAKE_ACCOUNT_ZERO, hre.ethers.utils.parseUnits("10", 18));
-  await wbtcContract.connect(wbtcSigner).transfer(FAKE_ACCOUNT_ONE, 10 ** 8);
-  console.log("checkdk");
-  await usdtContract
-    .connect(usdtSigner)
-    .transfer(FAKE_ACCOUNT_ZERO, 100000 * 10 ** 6);
-
-  await wethContract
-    .connect(await hre.ethers.getSigner(FAKE_ACCOUNT_ZERO))
-    .approve(
-      quickSwapStrategy.address,
-      hre.ethers.utils.parseUnits("100000", 18)
-    );
-  await usdcContract
-    .connect(await hre.ethers.getSigner(FAKE_ACCOUNT_ZERO))
-    .approve(
-      quickSwapStrategy.address,
-      hre.ethers.utils.parseUnits("100000", 6)
-    );
-  await usdtContract.approve(quickSwapStrategy.address, 100000 * 10 ** 6);
-
-  console.log("check");
-  await quickSwapStrategy.mint(
-    WETH,
-    USDC,
-    hre.ethers.utils.parseUnits("1", 18),
-    hre.ethers.utils.parseUnits("100", 6),
-    FAKE_ACCOUNT_ZERO
-  );
-  console.log("check2");
-  /*
-              const lpTokenContract = await hre.ethers.getContractAt(
-                "IERC20",
-                QUICKSWAP_ETH_USDC_POOL_IN_POLYGON
-              );
-            
-              await lpTokenContract.approve(quickSwapStrategy.address, 10000 * 10 ** 6);
-            */
-
-  const ethUsdLpTokenContract = await hre.ethers.getContractAt(
-    "IERC20",
-    QUICKSWAP_ETH_USDC_POOL_IN_POLYGON
-  );
-
-  await ethUsdLpTokenContract.approve(
-    quickSwapStrategy.address,
-    hre.ethers.utils.parseUnits("100000000", 18)
-  );
 
   const TokenDecimal = await hre.ethers.getContractFactory("TokenDecimal");
-
   const tokenDecimal = await TokenDecimal.deploy();
-
   await tokenDecimal.deployed();
+  await delay(3000);
 
   const QuickSwapSmLpToken = await hre.ethers.getContractFactory(
     "QuickSwapSmLpToken"
@@ -281,15 +143,18 @@ async function deploy() {
     tokenDecimal.address
   );
   await quickSwapSmLpToken.deployed();
-  console.log("address", quickSwapSmLpToken.address);
+  await delay(3000);
+  
   await lendingPool.addSmLpToken(
     QUICKSWAP_ETH_USDC_POOL_IN_POLYGON,
     quickSwapSmLpToken.address,
     quickSwapSmLpToken.tokenX(),
     quickSwapSmLpToken.tokenY()
   );
-  const ETH_SM_TOKEN = await hre.ethers.getContractFactory("SmToken");
+  await delay(3000);
 
+  console.log("checkpoint");
+  const ETH_SM_TOKEN = await hre.ethers.getContractFactory("SmToken");
   const USDC_SM_TOKEN = await hre.ethers.getContractFactory("SmToken");
 
   const ethSmTokenContract = await ETH_SM_TOKEN.deploy(
@@ -299,7 +164,9 @@ async function deploy() {
     factory.address,
     18
   );
+  await delay(3000);
   await ethSmTokenContract.deployed();
+  await delay(3000);
 
   const usdcSmTokenContract = await USDC_SM_TOKEN.deploy(
     "USDCSMToken",
@@ -308,45 +175,21 @@ async function deploy() {
     factory.address,
     6
   );
-
+  await delay(3000);
   await usdcSmTokenContract.deployed();
+  await delay(3000);
 
   // TODO
   await lendingPool.addSmToken(ethSmTokenContract.address, WETH, 18);
+  await delay(3000);
   await lendingPool.addSmToken(usdcSmTokenContract.address, USDC, 6);
+  await delay(3000);
 
   await ethSmTokenContract.approveLendingPool();
+  await delay(3000);
   await usdcSmTokenContract.approveLendingPool();
+  await delay(3000);
 
-  console.log("default setting");
-  await wethContract
-    .connect(defaultSigner)
-    .approve(lendingPool.address, hre.ethers.utils.parseUnits("10000", 18));
-  await usdcContract
-    .connect(defaultSigner)
-    .approve(lendingPool.address, hre.ethers.utils.parseUnits("1000000", 6));
-
-  await ethUSDCLpTokenContract
-    .connect(ethUsdcLpTokenSigner)
-    .transfer(FAKE_ACCOUNT_ONE, hre.ethers.utils.parseUnits("3", 14));
-  await ethUSDCLpTokenContract
-    .connect(defaultSigner)
-    .approve(lendingPool.address, hre.ethers.utils.parseUnits("100000", 18));
-
-  await lendingPool
-    .connect(defaultSigner)
-    .deposit(WETH, hre.ethers.utils.parseUnits("5", 18));
-  await lendingPool
-    .connect(defaultSigner)
-    .deposit(USDC, hre.ethers.utils.parseUnits("10000", 6));
-  await lendingPool
-    .connect(defaultSigner)
-    .depositERC20LpToken(
-      QUICKSWAP_ETH_USDC_POOL_IN_POLYGON,
-      hre.ethers.utils.parseUnits("2", 14)
-    );
-
-  console.log("배포 완료");
   console.log("Deployed Factory Address: ", factory.address);
   console.log(
     "Deployed Chainlink Price Oracle Address: ",
@@ -360,40 +203,6 @@ async function deploy() {
   console.log("Deployed SM ETH Token Address: ", ethSmTokenContract.address);
   console.log("Deployed SM USDC Token Address: ", usdcSmTokenContract.address);
 
-  console.log();
-  console.log("Account 1 Balance");
-  console.log("Public Address: ", "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266");
-  console.log(
-    "ETH/USDC LP Token Balance: ",
-    (await ethUSDCLpTokenContract.balanceOf(FAKE_ACCOUNT_ZERO)).toNumber()
-  );
-  console.log(
-    "BTC/USDC LP Token Balance: ",
-    (await btcUsdcLpTokenContract.balanceOf(FAKE_ACCOUNT_ZERO)).toNumber()
-  );
-  console.log(
-    "ETH/BTC LP Token Balance: ",
-    (await ethBtcLpTokenContract.balanceOf(FAKE_ACCOUNT_ZERO)).toNumber()
-  );
-
-  console.log();
-  console.log("Account 2 Balance");
-  console.log("Public Address: ", "0x70997970C51812dc3A010C7d01b50e0d17dc79C8");
-  /*
-              console.log(
-                "WETH Balance: ",
-                (await wethContract.balanceOf(FAKE_ACCOUNT_ONE)).toNumber()
-              );
-            
-              console.log(
-                "BTC Balance: ",
-                (await wbtcContract.balanceOf(FAKE_ACCOUNT_ONE)).toNumber()
-              );
-            
-              console.log(
-                "USDC Balance: ",
-                (await usdcContract.balanceOf(FAKE_ACCOUNT_ONE)).toNumber()
-              );*/
   return {
     lendingPool,
     wethContract,

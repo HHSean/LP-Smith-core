@@ -184,19 +184,19 @@ async function deploy() {
     QUICKSWAP_ETH_BTC_POOL_IN_POLYGON
   );
 
-  console.log("check");
+
   await ethUSDCLpTokenContract
     .connect(ethUsdcLpTokenSigner)
     .transfer(FAKE_ACCOUNT_ZERO, hre.ethers.utils.parseUnits("2", 14));
-  console.log("checkf");
+
   await btcUsdcLpTokenContract
     .connect(btcUsdcLpTokenSigner)
     .transfer(FAKE_ACCOUNT_ZERO, hre.ethers.utils.parseUnits("10", 6));
-  console.log("checkff");
+
   await ethBtcLpTokenContract
     .connect(ethBtcLpTokenSigner)
     .transfer(FAKE_ACCOUNT_ZERO, hre.ethers.utils.parseUnits("10", 6));
-  console.log("checkk");
+
   await usdcContract
     .connect(usdcSigner)
     .transfer(FAKE_ACCOUNT_ONE, 100000 * 10 ** 6);
@@ -216,7 +216,7 @@ async function deploy() {
     .connect(wethSigner)
     .transfer(FAKE_ACCOUNT_ZERO, hre.ethers.utils.parseUnits("10", 18));
   await wbtcContract.connect(wbtcSigner).transfer(FAKE_ACCOUNT_ONE, 10 ** 8);
-  console.log("checkdk");
+
   await usdtContract
     .connect(usdtSigner)
     .transfer(FAKE_ACCOUNT_ZERO, 100000 * 10 ** 6);
@@ -235,7 +235,6 @@ async function deploy() {
     );
   await usdtContract.approve(quickSwapStrategy.address, 100000 * 10 ** 6);
 
-  console.log("check");
   await quickSwapStrategy.mint(
     WETH,
     USDC,
@@ -243,7 +242,7 @@ async function deploy() {
     hre.ethers.utils.parseUnits("100", 6),
     FAKE_ACCOUNT_ZERO
   );
-  console.log("check2");
+
   /*
             const lpTokenContract = await hre.ethers.getContractAt(
               "IERC20",
@@ -282,7 +281,7 @@ async function deploy() {
     tokenDecimal.address
   );
   await quickSwapSmLpToken.deployed();
-  console.log("address", quickSwapSmLpToken.address);
+  
   await lendingPool.addSmLpToken(
     QUICKSWAP_ETH_USDC_POOL_IN_POLYGON,
     quickSwapSmLpToken.address,
@@ -347,7 +346,7 @@ async function deploy() {
       hre.ethers.utils.parseUnits("2", 14)
     );
 
-  console.log("배포 완료");
+  console.log("Deploy Complete");
   console.log("Deployed Factory Address: ", factory.address);
   console.log(
     "Deployed Chainlink Price Oracle Address: ",

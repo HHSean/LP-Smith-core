@@ -10,8 +10,5 @@ interface IPriceOracle {
      */
     function getAssetPrice(address asset) external view returns (uint256);
 
-    /***********
-    @dev sets the asset price, in wei
-     */
-    function setAssetPrice(address asset, uint256 price) external;
+    function setAssetToPriceFeed(address _token, address _dollarPriceFeed) external;
 }

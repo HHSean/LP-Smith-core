@@ -126,7 +126,6 @@ contract QuickSwapSmLpToken is ISmLpToken, ERC20, Ownable {
         )
     {
         (_amountX, _amountY) = _beforeMint(amount);
-        console.log(_amountX, _amountY);
 
         _isFirstDeposit = userStatus[user].totalLpToken == 0 ? true : false;
 
@@ -360,7 +359,7 @@ contract QuickSwapSmLpToken is ISmLpToken, ERC20, Ownable {
 
         uint256 _totalSupply = IUniswapV2Pair(UNDERLYING_ASSET_ADDRESS)
             .totalSupply();
-        console.log(tokenX, tokenY);
+ 
         uint256 _usdcPriceX = _priceOracle.getAssetPrice(tokenX);
         uint256 _usdcPriceY = _priceOracle.getAssetPrice(tokenY);
 

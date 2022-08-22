@@ -4,12 +4,12 @@ pragma solidity ^0.8.9;
 import "./interfaces/chainlink/AggregatorV3Interface.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-contract ChainLinkPriceOracle is Ownable {
+contract PriceOracle is Ownable {
     mapping(address => address) public assetToDollarPriceFeed;
 
     constructor() {}
 
-    function getLatestPrice(address asset) public view returns (int256) {
+    function getAssetPrice(address asset) public view returns (int256) {
         (
             uint80 roundID,
             int256 price,

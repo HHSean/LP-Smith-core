@@ -3,7 +3,7 @@ pragma solidity ^0.8.9;
 
 import {IPriceOracle} from "../../core/interfaces/IPriceOracle.sol";
 
-contract PriceOracle is IPriceOracle {
+contract MockPriceOracle is IPriceOracle {
     mapping(address => uint256) prices;
     uint256 ethPriceUsd;
 
@@ -19,7 +19,7 @@ contract PriceOracle is IPriceOracle {
         return prices[_asset];
     }
 
-    function setAssetPrice(address _asset, uint256 _price) external override {
+    function setAssetPrice(address _asset, uint256 _price) external {
         prices[_asset] = _price;
         emit AssetPriceUpdated(_asset, _price, block.timestamp);
     }
@@ -31,5 +31,9 @@ contract PriceOracle is IPriceOracle {
     function setEthUsdPrice(uint256 _price) external {
         ethPriceUsd = _price;
         emit EthPriceUpdated(_price, block.timestamp);
+    }
+
+    function setAssetToPriceFeed(address _token, address _dollarPriceFeed) external{
+        
     }
 }

@@ -54,7 +54,7 @@ contract SmToken is ISmToken, Ownable, ERC20 {
         } else {
             amountToMint = totalSupply().mul(amount).div(liquidityIndex);
         }
-        console.log("amountToMint", amountToMint);
+
         _mint(user, amountToMint);
     }
 
@@ -76,7 +76,6 @@ contract SmToken is ISmToken, Ownable, ERC20 {
         if (totalSupply() == 0) {
             _depositAmount = 0;
         } else {
-            console.log("liquidity", liquidityIndex);
             _depositAmount = liquidityIndex.mul(balanceOf(user)).div(
                 totalSupply()
             );

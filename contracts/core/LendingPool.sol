@@ -67,9 +67,6 @@ contract LendingPool is ILendingPool, LendingPoolStorage {
     ) external override {
         address smLpTokenAddress = address(smLpTokenMap[lpTokenAddress]);
         // transfer lpToken from msg.sender to smLpTokenAddress
-        console.log("balance check");
-        console.log(amount);
-        console.log(IERC20(lpTokenAddress).balanceOf(msg.sender));
         IUniswapV2Pair(lpTokenAddress).transferFrom(
             msg.sender,
             smLpTokenAddress,
@@ -342,9 +339,7 @@ contract LendingPool is ILendingPool, LendingPoolStorage {
         ReserveData storage reserve = _reserves[asset];
         address[] storage smLpTokenList = smLpTokenListPerAsset[asset];
         _liquidityIndex = reserve.depositAmount;
-        console.log("1",_liquidityIndex);
         _liquidityIndex -= _getLpDebts(asset, smLpTokenList);
-        console.log("2",_liquidityIndex);
         (bool sign0, uint256 potentialOnSale) = _getPotentialOnSale(
             asset,
             smLpTokenList
@@ -355,7 +350,6 @@ contract LendingPool is ILendingPool, LendingPoolStorage {
         } else {
             _liquidityIndex -= potentialOnSale;
         }
-        console.log("3",_liquidityIndex);
         (bool sign1, uint256 pendingOnSale) = _getPendingOnSale(
             asset,
             smLpTokenList
@@ -365,7 +359,6 @@ contract LendingPool is ILendingPool, LendingPoolStorage {
         } else {
             _liquidityIndex -= pendingOnSale;
         }
-        console.log("4",_liquidityIndex);
     }
 
     function swap(
@@ -450,8 +443,6 @@ contract LendingPool is ILendingPool, LendingPoolStorage {
             reserveData.availAmount,
             reserveData.borrowAmount
         );
-        console.log(getLiquidityIndex(asset));
-        console.log("deposit", reserveData.depositAmount);
         _userDepositAmount = ISmToken(smTokenMap[asset]).getUserDepositAmount(
             user,
             getLiquidityIndex(asset)
