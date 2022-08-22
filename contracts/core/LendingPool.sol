@@ -87,7 +87,7 @@ contract LendingPool is ILendingPool, LendingPoolStorage {
         uint256 amount // lp token qty (not sm lp token)
     ) external override validWithdrawal returns (uint256) {
         address smLpTokenAddress = address(smLpTokenMap[lpTokenAddress]);
-        ISmLpToken(smLpTokenAddress).burn(msg.sender, amount);
+        ISmLpToken(smLpTokenAddress).burn(msg.sender, msg.sender, amount);
     }
 
     /**
@@ -397,7 +397,21 @@ contract LendingPool is ILendingPool, LendingPoolStorage {
         // repay amount to repay for user
         _repay(user, tokenToRepay, amountToRepay);
 
-        // TODO liquidate position
+        IPriceOracle priceOracle = IPriceOracle(
+            IFactory(factory).getPriceOracle()
+        );
+        uint256 price = priceOracle.getAssetPrice(tokenToRepay);
+
+        // liquidate position
+        ISmLpToken(smLpTokenMap[collateralToReceive]).liquidate(
+            msg.sender,
+            user,
+            GeneralLogic.getUnderlyingValue(
+                uint248(amountToRepay),
+                _reserves[tokenToRepay].reserveDecimals,
+                price
+            )
+        );
 
         // check HF improvement
         uint256 postHF = getHealthFactor(user);
