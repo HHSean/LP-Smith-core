@@ -127,7 +127,7 @@ contract QuickSwapSmLpToken is ISmLpToken, ERC20, Ownable {
     {
         (_amountX, _amountY) = _beforeMint(amount);
         console.log(_amountX, _amountY);
-        
+
         _isFirstDeposit = userStatus[user].totalLpToken == 0 ? true : false;
 
         userStatus[user].totalLpToken = userStatus[user].totalLpToken.add(
@@ -400,8 +400,8 @@ contract QuickSwapSmLpToken is ISmLpToken, ERC20, Ownable {
         _usdcValuePerLp = liquidity
             .mul(2)
             .mul(Math.sqrt(_usdcPriceX.mul(_usdcPriceY)))
-            .div(_totalSupply)
             .mul(10**18)
+            .div(_totalSupply)
             .div(Math.sqrt(10**(tokenXDecimal.add(tokenYDecimal))));
     }
 
@@ -542,7 +542,7 @@ contract QuickSwapSmLpToken is ISmLpToken, ERC20, Ownable {
 
     function getDepositValue(address user) public view returns (uint256) {
         (, , uint256 lpPrice) = _getDebt();
-        return userStatus[user].totalLpToken.mul(lpPrice);
+        return userStatus[user].totalLpToken.mul(lpPrice).div(10**18);
     }
 
     function getBorrowableValue(address user) public view returns (uint256) {
