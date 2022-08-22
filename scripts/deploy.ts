@@ -164,18 +164,19 @@ async function main() {
     QUICKSWAP_ETH_BTC_POOL_IN_POLYGON
   );
 
+  console.log("check");
   await ethUSDCLpTokenContract
     .connect(ethUsdcLpTokenSigner)
-    .transfer(FAKE_ACCOUNT_ZERO, "100000");
-
+    .transfer(FAKE_ACCOUNT_ZERO, hre.ethers.utils.parseUnits("1", 12));
+  console.log("checkf");
   await btcUsdcLpTokenContract
     .connect(btcUsdcLpTokenSigner)
-    .transfer(FAKE_ACCOUNT_ZERO, "100000");
-
+    .transfer(FAKE_ACCOUNT_ZERO, hre.ethers.utils.parseUnits("10", 6));
+  console.log("checkff");
   await ethBtcLpTokenContract
     .connect(ethBtcLpTokenSigner)
-    .transfer(FAKE_ACCOUNT_ZERO, "100000");
-
+    .transfer(FAKE_ACCOUNT_ZERO, hre.ethers.utils.parseUnits("10", 6));
+  console.log("checkk");
   await usdcContract
     .connect(usdcSigner)
     .transfer(FAKE_ACCOUNT_ONE, 100000 * 10 ** 6);
@@ -188,45 +189,50 @@ async function main() {
     .connect(usdcSigner)
     .transfer(quickSwapStrategy.address, 100000 * 10 ** 6);
 
-  await wethContract.connect(wethSigner).transfer(FAKE_ACCOUNT_ONE, 10 ** 8);
-
+  await wethContract
+    .connect(wethSigner)
+    .transfer(FAKE_ACCOUNT_ONE, hre.ethers.utils.parseUnits("10", 18));
+  await wethContract
+    .connect(wethSigner)
+    .transfer(FAKE_ACCOUNT_ZERO, hre.ethers.utils.parseUnits("10", 18));
   await wbtcContract.connect(wbtcSigner).transfer(FAKE_ACCOUNT_ONE, 10 ** 8);
-
+  console.log("checkdk");
   await usdtContract
     .connect(usdtSigner)
     .transfer(FAKE_ACCOUNT_ZERO, 100000 * 10 ** 6);
 
-  await usdcContract.approve(quickSwapStrategy.address, 100000 * 10 ** 6);
+  await wethContract
+    .connect(await hre.ethers.getSigner(FAKE_ACCOUNT_ZERO))
+    .approve(
+      quickSwapStrategy.address,
+      hre.ethers.utils.parseUnits("100000", 18)
+    );
+  await usdcContract
+    .connect(await hre.ethers.getSigner(FAKE_ACCOUNT_ZERO))
+    .approve(
+      quickSwapStrategy.address,
+      hre.ethers.utils.parseUnits("100000", 6)
+    );
   await usdtContract.approve(quickSwapStrategy.address, 100000 * 10 ** 6);
 
+  console.log("check");
   await quickSwapStrategy.mint(
-    USDT,
+    WETH,
     USDC,
-    1000 * 10 ** 6,
-    1000 * 10 ** 6,
+    hre.ethers.utils.parseUnits("1", 18),
+    hre.ethers.utils.parseUnits("100", 6),
     FAKE_ACCOUNT_ZERO
   );
-
+  console.log("check2");
+  /*
   const lpTokenContract = await hre.ethers.getContractAt(
     "IERC20",
-    QUICKSWAP_USDC_USDT_POOL_IN_POLYGON
+    QUICKSWAP_ETH_USDC_POOL_IN_POLYGON
   );
 
   await lpTokenContract.approve(quickSwapStrategy.address, 10000 * 10 ** 6);
+*/
 
-  /*
-  await quickSwapStrategy.mintWithETH(
-    USDC,
-    10 * 10 ** 6,
-    0,
-    0,
-    FAKE_ACCOUNT_ZERO,
-    {
-      value: hre.ethers.BigNumber.from((10 * 10 ** 18).toString()),
-    }
-  );
-  */
-  /*
   const ethUsdLpTokenContract = await hre.ethers.getContractAt(
     "IERC20",
     QUICKSWAP_ETH_USDC_POOL_IN_POLYGON
@@ -234,9 +240,9 @@ async function main() {
 
   await ethUsdLpTokenContract.approve(
     quickSwapStrategy.address,
-    10000000 * 10 ** 6
+    hre.ethers.utils.parseUnits("100000000", 18)
   );
-*/
+
   const TokenDecimal = await hre.ethers.getContractFactory("TokenDecimal");
 
   const tokenDecimal = await TokenDecimal.deploy();
@@ -247,33 +253,34 @@ async function main() {
     "QuickSwapSmLpToken"
   );
   const quickSwapSmLpToken = await QuickSwapSmLpToken.deploy(
-    "USDC_USDT_POOL",
-    "smQuickSwapUSDCUSDT",
+    "ETH_USDC_POOL",
+    "smQuickSwapETHUSDC",
     7000,
     factory.address,
-    QUICKSWAP_USDC_USDT_POOL_IN_POLYGON,
+    QUICKSWAP_ETH_USDC_POOL_IN_POLYGON,
     quickSwapStrategy.address,
     tokenDecimal.address
   );
   await quickSwapSmLpToken.deployed();
 
   await lendingPool.addSmLpToken(
-    QUICKSWAP_USDC_USDT_POOL_IN_POLYGON,
+    QUICKSWAP_ETH_USDC_POOL_IN_POLYGON,
     quickSwapSmLpToken.address,
-    18
+    quickSwapSmLpToken.tokenX(),
+    quickSwapSmLpToken.tokenY()
   );
 
-  const USDT_SM_TOKEN = await hre.ethers.getContractFactory("SmToken");
+  const ETH_SM_TOKEN = await hre.ethers.getContractFactory("SmToken");
 
   const USDC_SM_TOKEN = await hre.ethers.getContractFactory("SmToken");
 
-  const usdtSmTokenContract = await USDT_SM_TOKEN.deploy(
-    "USDTSMToken",
-    "smUSDT",
-    USDT,
+  const ethSmTokenContract = await ETH_SM_TOKEN.deploy(
+    "ETHSMToken",
+    "smETH",
+    WETH,
     factory.address
   );
-  await usdtSmTokenContract.deployed();
+  await ethSmTokenContract.deployed();
 
   const usdcSmTokenContract = await USDC_SM_TOKEN.deploy(
     "USDCSMToken",
@@ -285,7 +292,7 @@ async function main() {
   await usdcSmTokenContract.deployed();
 
   // TODO
-  await lendingPool.addSmToken(usdtSmTokenContract.address, USDT, 6);
+  await lendingPool.addSmToken(ethSmTokenContract.address, USDT, 18);
   await lendingPool.addSmToken(usdcSmTokenContract.address, USDC, 6);
 
   console.log("배포 완료");
@@ -299,14 +306,14 @@ async function main() {
     "Deployed USDC/USDT QuickSwapSmLpToken Contract Address: ",
     quickSwapSmLpToken.address
   );
-  console.log("Deployed SM USDT Token Address: ", usdtSmTokenContract.address);
+  console.log("Deployed SM USDT Token Address: ", ethSmTokenContract.address);
   console.log("Deployed SM USDC Token Address: ", usdcSmTokenContract.address);
 
   console.log();
   console.log("Account 1 Balance");
   console.log("Public Address: ", "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266");
   console.log(
-    "USDC/USDT LP Token Balance: ",
+    "ETH/USDC LP Token Balance: ",
     (await ethUSDCLpTokenContract.balanceOf(FAKE_ACCOUNT_ZERO)).toNumber()
   );
   console.log(
@@ -321,6 +328,7 @@ async function main() {
   console.log();
   console.log("Account 2 Balance");
   console.log("Public Address: ", "0x70997970C51812dc3A010C7d01b50e0d17dc79C8");
+  /*
   console.log(
     "WETH Balance: ",
     (await wethContract.balanceOf(FAKE_ACCOUNT_ONE)).toNumber()
@@ -334,7 +342,7 @@ async function main() {
   console.log(
     "USDC Balance: ",
     (await usdcContract.balanceOf(FAKE_ACCOUNT_ONE)).toNumber()
-  );
+  );*/
 }
 
 main()
