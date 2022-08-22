@@ -83,4 +83,25 @@ interface ILendingPool {
         returns (
             uint256 _healthFactor // decimal 6
         );
+
+    function getReserveData(address user, address asset)
+        external
+        view
+        returns (
+            uint256 _depositAmount,
+            uint256 _availAmount,
+            uint256 _borrowAmount,
+            uint256 _userDepositAmount,
+            uint256 _userBorrowAmount
+        );
+
+    function getLpTokenData(address user, address lpTokenAddress)
+        external
+        view
+        returns (
+            uint256 _totalDeposit,
+            uint _userDeposit,
+            uint256 _totalValue,
+            uint256 _userValue
+        );
 }

@@ -50,10 +50,18 @@ contract SmToken is ISmToken, Ownable, ERC20 {
     function burn(
         address user,
         uint256 amount, // underlying unit
-        uint256 liquidityIndex // debt of the asset
+        uint256 liquidityIndex
     ) external onlyLendingPool {
         // burn token with exchange rate
         uint256 amountToBurn = totalSupply().mul(amount).div(liquidityIndex);
         _mint(user, amountToBurn);
+    }
+
+    function getUserDepositAmount(address user, uint256 liquidityIndex)
+        external
+        view
+        returns (uint256 _depositAmount)
+    {
+        _depositAmount = liquidityIndex.mul(balanceOf(user)).div(totalSupply());
     }
 }

@@ -46,4 +46,9 @@ interface ISmToken is IERC20 {
      * @dev Returns the address of the underlying asset of this smToken (E.g. WETH for smWETH)
      **/
     function UNDERLYING_ASSET_ADDRESS() external view returns (address);
+
+    function getUserDepositAmount(address user, uint256 liquidityIndex)
+        external
+        view
+        returns (uint256 _depositAmount);
 }

@@ -46,4 +46,14 @@ interface ISmLpToken is IERC20 {
      * @dev Returns the address of the underlying asset of this smToken (E.g. WETH for smWETH)
      **/
     function UNDERLYING_ASSET_ADDRESS() external view returns (address);
+
+    function getLpTokenData(address user)
+        external
+        view
+        returns (
+            uint256 _totalDeposit,
+            uint _userDeposit,
+            uint256 _totalValue,
+            uint256 _userValue
+        );
 }

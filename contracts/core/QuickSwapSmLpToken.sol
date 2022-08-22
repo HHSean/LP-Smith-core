@@ -468,4 +468,21 @@ contract QuickSwapSmLpToken is ISmLpToken, ERC20, Ownable {
         IERC20(tokenX).approve(lendingPoolAddress, _amountX);
         IERC20(tokenY).approve(lendingPoolAddress, _amountY);
     }
+
+    function getLpTokenData(address user)
+        external
+        view
+        returns (
+            uint256 _totalDeposit,
+            uint _userDeposit,
+            uint256 _totalValue,
+            uint256 _userValue
+        )
+    {
+        _totalDeposit = totalStatus.totalLpToken;
+        _userDeposit = userStatus[user].totalLpToken;
+        (, , uint256 lpPrice) = _getDebt();
+        _totalValue = _totalDeposit.mul(lpPrice);
+        _userValue = _userDeposit.mul(lpPrice);
+    }
 }

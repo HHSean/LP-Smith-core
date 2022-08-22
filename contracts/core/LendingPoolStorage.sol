@@ -11,10 +11,36 @@ contract LendingPoolStorage {
         address smTokenAddress;
         address reserveAddress;
         uint8 reserveDecimals;
-        uint8 id;
     }
 
     mapping(address => ReserveData) internal _reserves; // reserve => reserve data
+
+    function addSmToken(
+        address smTokenAddress,
+        address asset,
+        uint8 reserveDecimals
+    ) external {
+        _reserves[asset] = ReserveData(
+            0,
+            0,
+            0,
+            smTokenAddress,
+            asset,
+            reserveDecimals
+        );
+        smTokenMap[asset] = smTokenAddress;
+    }
+
+    function addSmLpToken(
+        address lpTokenAddress,
+        address smLpTokenAddress,
+        address tokenX,
+        address tokenY
+    ) external {
+        smLpTokenMap[lpTokenAddress] = smLpTokenAddress;
+        smLpTokenListPerAsset[tokenX].push(smLpTokenAddress);
+        smLpTokenListPerAsset[tokenY].push(smLpTokenAddress);
+    }
 
     // ERC20
     struct UserDebtData {
