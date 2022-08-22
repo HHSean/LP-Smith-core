@@ -107,45 +107,29 @@ async function main() {
 
   await factory.deployed();
 
-  await hre.network.provider.request({
-    method: "hardhat_impersonateAccount",
-    params: [USDC_WHALE_ADDRESS_IN_POLYGON],
-  });
+  const whaleArray = [
+    USDC_WHALE_ADDRESS_IN_POLYGON,
+    USDT_WHALE_ADDRESS_IN_POLYGON,
+    MATIC_WHALE_ADDRESS_IN_POLYGON,
+    WETH_WHALE_ADDRESS_IN_POLYGON,
+    QUICKSWAP_ETH_USDC_LP_TOKEN_WHALE,
+    QUICKSWAP_BTC_USDC_LP_TOKEN_WHALE,
+    QUICKSWAP_ETH_BTC_LP_TOKEN_WHALE,
+    WBTC_WHALE_ADDRESS_IN_POLYGON,
+  ];
 
-  await hre.network.provider.request({
-    method: "hardhat_impersonateAccount",
-    params: [USDT_WHALE_ADDRESS_IN_POLYGON],
-  });
+  const whaleRequestPromiseAll = [];
 
-  await hre.network.provider.request({
-    method: "hardhat_impersonateAccount",
-    params: [MATIC_WHALE_ADDRESS_IN_POLYGON],
-  });
+  for (let i = 0; i < whaleArray.length; i++) {
+    whaleRequestPromiseAll.push(
+      hre.network.provider.request({
+        method: "hardhat_impersonateAccount",
+        params: [whaleArray[i]],
+      })
+    );
+  }
 
-  await hre.network.provider.request({
-    method: "hardhat_impersonateAccount",
-    params: [WETH_WHALE_ADDRESS_IN_POLYGON],
-  });
-
-  await hre.network.provider.request({
-    method: "hardhat_impersonateAccount",
-    params: [QUICKSWAP_ETH_USDC_LP_TOKEN_WHALE],
-  });
-
-  await hre.network.provider.request({
-    method: "hardhat_impersonateAccount",
-    params: [QUICKSWAP_BTC_USDC_LP_TOKEN_WHALE],
-  });
-
-  await hre.network.provider.request({
-    method: "hardhat_impersonateAccount",
-    params: [QUICKSWAP_ETH_BTC_LP_TOKEN_WHALE],
-  });
-
-  await hre.network.provider.request({
-    method: "hardhat_impersonateAccount",
-    params: [WBTC_WHALE_ADDRESS_IN_POLYGON],
-  });
+  await Promise.all(whaleRequestPromiseAll);
 
   const usdcSigner = await hre.ethers.getSigner(USDC_WHALE_ADDRESS_IN_POLYGON);
   const usdtSigner = await hre.ethers.getSigner(USDT_WHALE_ADDRESS_IN_POLYGON);
@@ -204,9 +188,9 @@ async function main() {
     .connect(usdcSigner)
     .transfer(quickSwapStrategy.address, 100000 * 10 ** 6);
 
-  await wethContract.connect(wethSigner).transfer(FAKE_ACCOUNT_ONE, 10 ** 6);
+  await wethContract.connect(wethSigner).transfer(FAKE_ACCOUNT_ONE, 10 ** 8);
 
-  await wbtcContract.connect(wbtcSigner).transfer(FAKE_ACCOUNT_ONE, 10 ** 6);
+  await wbtcContract.connect(wbtcSigner).transfer(FAKE_ACCOUNT_ONE, 10 ** 8);
 
   await usdtContract
     .connect(usdtSigner)
@@ -251,6 +235,12 @@ async function main() {
     10000000 * 10 ** 6
   );
 
+  const TokenDecimal = await hre.ethers.getContractFactory("TokenDecimal");
+
+  const tokenDecimal = await TokenDecimal.deploy();
+
+  await tokenDecimal.deployed();
+
   const QuickSwapSmLpToken = await hre.ethers.getContractFactory(
     "QuickSwapSmLpToken"
   );
@@ -261,7 +251,15 @@ async function main() {
     1,
     factory.address,
     QUICKSWAP_ETH_USDC_POOL_IN_POLYGON,
-    quickSwapStrategy.address
+    quickSwapStrategy.address,
+    tokenDecimal.address
+  );
+
+  await lendingPool.addSmLpToken(
+    QUICKSWAP_ETH_USDC_POOL_IN_POLYGON,
+    quickSwapSmLpToken.address,
+    WETH,
+    USDC
   );
 
   await quickSwapSmLpToken.deployed();
@@ -287,6 +285,10 @@ async function main() {
   );
 
   await usdcSmToken.deployed();
+
+  // TODO
+  await lendingPool.addSmToken(ethSmTokenContract.address, WETH, 18);
+  await lendingPool.addSmToken(ethSmTokenContract.address, USDC, 6);
 
   console.log("배포 완료");
   console.log("Deployed Factory Address: ", factory.address);
