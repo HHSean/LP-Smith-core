@@ -4,6 +4,7 @@ import {ILendingPool} from "./interfaces/ILendingPool.sol";
 import {IUniswapV2Pair} from "./interfaces/IUniswapV2Pair.sol";
 import {IStrategy} from "./interfaces/IStrategy.sol";
 import {IPriceOracle} from "./interfaces/IPriceOracle.sol";
+import {ITokenDecimal} from "./interfaces/ITokenDecimal.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
@@ -27,8 +28,11 @@ contract QuickSwapSmLpToken is ISmLpToken, ERC20, Ownable {
     address public override UNDERLYING_ASSET_ADDRESS;
     address public STRATEGY_CONTRACT_ADDRESS;
     address public FACTORY_CONTRACT_ADDRESS;
+    address public TOKEN_DECIMAL_CONTRACT_ADDRESS;
     address public override tokenX;
     address public override tokenY;
+    uint256 tokenXDecimal;
+    uint256 tokenYDecimal;
 
     bool public pendingOnSaleXSign;
     bool public pendingOnSaleYSign;
@@ -51,7 +55,8 @@ contract QuickSwapSmLpToken is ISmLpToken, ERC20, Ownable {
         uint256 _collateralRate,
         address factoryContractAddress,
         address lpTokenContractAddress,
-        address strategyContractAddress
+        address strategyContractAddress,
+        address tokenDecimalContractAddress
     ) ERC20(name_, symbol_) {
         _name = name_;
         _symbol = symbol_;
@@ -59,8 +64,14 @@ contract QuickSwapSmLpToken is ISmLpToken, ERC20, Ownable {
         FACTORY_CONTRACT_ADDRESS = factoryContractAddress;
         UNDERLYING_ASSET_ADDRESS = lpTokenContractAddress;
         STRATEGY_CONTRACT_ADDRESS = strategyContractAddress;
+        TOKEN_DECIMAL_CONTRACT_ADDRESS = tokenDecimalContractAddress;
+
         tokenX = IUniswapV2Pair(UNDERLYING_ASSET_ADDRESS).token0();
         tokenY = IUniswapV2Pair(UNDERLYING_ASSET_ADDRESS).token1();
+        tokenXDecimal = ITokenDecimal(TOKEN_DECIMAL_CONTRACT_ADDRESS)
+            .getDecimal(tokenX);
+        tokenYDecimal = ITokenDecimal(TOKEN_DECIMAL_CONTRACT_ADDRESS)
+            .getDecimal(tokenY);
     }
 
     modifier onlyLendingPool() {
@@ -134,8 +145,9 @@ contract QuickSwapSmLpToken is ISmLpToken, ERC20, Ownable {
 
     function burn(
         address user,
+        address recipient,
         uint256 amount // LP token
-    ) external onlyLendingPool returns (bool _isCloseAll) {
+    ) public onlyLendingPool returns (bool _isCloseAll) {
         require(amount <= balanceOf(address(this)), "Insufficient smLpToken");
 
         uint256 _amountToMint = amount > userStatus[user].realizedLpToken
@@ -151,7 +163,7 @@ contract QuickSwapSmLpToken is ISmLpToken, ERC20, Ownable {
                 : _addLiquidity(_amountToMint);
 
         IERC20(UNDERLYING_ASSET_ADDRESS).transfer(
-            user,
+            recipient,
             Math.min(userStatus[user].realizedLpToken, amount).add(
                 _mintedAmount
             )
@@ -207,11 +219,28 @@ contract QuickSwapSmLpToken is ISmLpToken, ERC20, Ownable {
         _burn(address(this), amount);
     }
 
+    function liquidate(
+        address liquidator,
+        address user,
+        uint256 repaidValue
+    ) external onlyLendingPool returns (uint256 _returnAmount) {
+        (, , uint256 lpPrice) = _getDebt();
+        _returnAmount = repaidValue
+            .mul(10500)
+            .div(10000)
+            .div(lpPrice)
+            .mul(10**18);
+        require(
+            userStatus[user].totalLpToken >= _returnAmount,
+            "Insufficient Collateral"
+        );
+        burn(user, liquidator, _returnAmount);
+    }
+
     function realizeLp(
         address user,
         uint256 amount // LP token
     ) external onlyLendingPool {
-        require(amount <= balanceOf(address(this)), "Insufficient smLpToken");
         require(
             amount <=
                 userStatus[user].totalLpToken.sub(
@@ -363,12 +392,30 @@ contract QuickSwapSmLpToken is ISmLpToken, ERC20, Ownable {
 
         uint256 liquidity = Math.sqrt(_reserve0.mul(_reserve1));
 
-        uint256 _virtualX = liquidity.mul(
-            Math.sqrt(_usdcPriceY.div(_usdcPriceX))
-        );
-        uint256 _virtualY = liquidity.mul(
-            Math.sqrt(_usdcPriceX.div(_usdcPriceY))
-        );
+        uint256 _virtualX;
+        uint256 _virtualY;
+
+        if (tokenXDecimal > tokenYDecimal) {
+            uint256 _multiplier = Math.sqrt(
+                10**(tokenXDecimal.sub(tokenYDecimal))
+            );
+            _virtualX = liquidity
+                .mul(Math.sqrt(_usdcPriceY.div(_usdcPriceX)))
+                .mul(_multiplier);
+            _virtualY = liquidity
+                .mul(Math.sqrt(_usdcPriceX.div(_usdcPriceY)))
+                .div(_multiplier);
+        } else {
+            uint256 _multiplier = Math.sqrt(
+                10**(tokenYDecimal.sub(tokenXDecimal))
+            );
+            _virtualX = liquidity
+                .mul(Math.sqrt(_usdcPriceY.div(_usdcPriceX)))
+                .div(_multiplier);
+            _virtualY = liquidity
+                .mul(Math.sqrt(_usdcPriceX.div(_usdcPriceY)))
+                .mul(_multiplier);
+        }
 
         _debtTokenX = _virtualX
             .mul(totalStatus.totalLpToken.sub(totalStatus.realizedLpToken))
@@ -379,7 +426,9 @@ contract QuickSwapSmLpToken is ISmLpToken, ERC20, Ownable {
         _usdcValuePerLp = liquidity
             .mul(2)
             .mul(Math.sqrt(_usdcPriceX.mul(_usdcPriceY)))
-            .div(_totalSupply);
+            .div(_totalSupply)
+            .mul(10**18)
+            .div(Math.sqrt(10**(tokenXDecimal.add(tokenYDecimal))));
     }
 
     function getPotentialOnSale(address asset)
