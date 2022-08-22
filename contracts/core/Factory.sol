@@ -5,6 +5,7 @@ import {ILendingPool} from "./interfaces/ILendingPool.sol";
 import {IPriceOracle} from "./interfaces/IPriceOracle.sol";
 import {IFactory} from "./interfaces/IFactory.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "hardhat/console.sol";
 
 // change name into factory
 contract Factory is Ownable, IFactory {

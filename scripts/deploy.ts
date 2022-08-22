@@ -66,7 +66,7 @@ const WBTC = "0x1bfd67037b42cf73acf2047067bd4f2c47d9bfd6";
 const QUICKSWAP_USDC_USDT_POOL_IN_POLYGON =
   "0x2cf7252e74036d1da831d11089d326296e64a728";
 
-async function main() {
+async function deploy() {
   const QuickSwapStrategy = await hre.ethers.getContractFactory(
     "QuickSwapStrategy"
   );
@@ -76,14 +76,30 @@ async function main() {
   );
 
   await quickSwapStrategy.deployed();
-
+  /*
+    const ChainLinkPriceOracle = await hre.ethers.getContractFactory(
+      "ChainLinkPriceOracle"
+    );
+  
+    const chainLinkPriceOracle = await ChainLinkPriceOracle.deploy();
+  
+    await chainLinkPriceOracle.deployed();
+  */
   const ChainLinkPriceOracle = await hre.ethers.getContractFactory(
-    "ChainLinkPriceOracle"
+    "PriceOracle"
   );
 
   const chainLinkPriceOracle = await ChainLinkPriceOracle.deploy();
 
   await chainLinkPriceOracle.deployed();
+  await chainLinkPriceOracle.setAssetPrice(
+    WETH,
+    hre.ethers.utils.parseUnits("1800", 18)
+  );
+  await chainLinkPriceOracle.setAssetPrice(
+    USDC,
+    hre.ethers.utils.parseUnits("1", 18)
+  );
 
   const GeneralLogic = await hre.ethers.getContractFactory("GeneralLogic");
 
@@ -106,6 +122,8 @@ async function main() {
   const factory = await Factory.deploy();
 
   await factory.deployed();
+  await factory.setPriceOracle(chainLinkPriceOracle.address);
+  await factory.setLendingPool(lendingPool.address);
 
   const whaleArray = [
     USDC_WHALE_ADDRESS_IN_POLYGON,
@@ -225,13 +243,13 @@ async function main() {
   );
   console.log("check2");
   /*
-  const lpTokenContract = await hre.ethers.getContractAt(
-    "IERC20",
-    QUICKSWAP_ETH_USDC_POOL_IN_POLYGON
-  );
-
-  await lpTokenContract.approve(quickSwapStrategy.address, 10000 * 10 ** 6);
-*/
+    const lpTokenContract = await hre.ethers.getContractAt(
+      "IERC20",
+      QUICKSWAP_ETH_USDC_POOL_IN_POLYGON
+    );
+  
+    await lpTokenContract.approve(quickSwapStrategy.address, 10000 * 10 ** 6);
+  */
 
   const ethUsdLpTokenContract = await hre.ethers.getContractAt(
     "IERC20",
@@ -262,14 +280,13 @@ async function main() {
     tokenDecimal.address
   );
   await quickSwapSmLpToken.deployed();
-
+  console.log("address", quickSwapSmLpToken.address);
   await lendingPool.addSmLpToken(
     QUICKSWAP_ETH_USDC_POOL_IN_POLYGON,
     quickSwapSmLpToken.address,
     quickSwapSmLpToken.tokenX(),
     quickSwapSmLpToken.tokenY()
   );
-
   const ETH_SM_TOKEN = await hre.ethers.getContractFactory("SmToken");
 
   const USDC_SM_TOKEN = await hre.ethers.getContractFactory("SmToken");
@@ -278,7 +295,8 @@ async function main() {
     "ETHSMToken",
     "smETH",
     WETH,
-    factory.address
+    factory.address,
+    18
   );
   await ethSmTokenContract.deployed();
 
@@ -286,13 +304,14 @@ async function main() {
     "USDCSMToken",
     "smUSDC",
     USDC,
-    factory.address
+    factory.address,
+    6
   );
 
   await usdcSmTokenContract.deployed();
 
   // TODO
-  await lendingPool.addSmToken(ethSmTokenContract.address, USDT, 18);
+  await lendingPool.addSmToken(ethSmTokenContract.address, WETH, 18);
   await lendingPool.addSmToken(usdcSmTokenContract.address, USDC, 6);
 
   console.log("배포 완료");
@@ -303,7 +322,7 @@ async function main() {
   );
   console.log("Deployed Lending Pool Address: ", lendingPool.address);
   console.log(
-    "Deployed USDC/USDT QuickSwapSmLpToken Contract Address: ",
+    "Deployed ETH/USDC QuickSwapSmLpToken Contract Address: ",
     quickSwapSmLpToken.address
   );
   console.log("Deployed SM USDT Token Address: ", ethSmTokenContract.address);
@@ -329,23 +348,26 @@ async function main() {
   console.log("Account 2 Balance");
   console.log("Public Address: ", "0x70997970C51812dc3A010C7d01b50e0d17dc79C8");
   /*
-  console.log(
-    "WETH Balance: ",
-    (await wethContract.balanceOf(FAKE_ACCOUNT_ONE)).toNumber()
-  );
-
-  console.log(
-    "BTC Balance: ",
-    (await wbtcContract.balanceOf(FAKE_ACCOUNT_ONE)).toNumber()
-  );
-
-  console.log(
-    "USDC Balance: ",
-    (await usdcContract.balanceOf(FAKE_ACCOUNT_ONE)).toNumber()
-  );*/
+    console.log(
+      "WETH Balance: ",
+      (await wethContract.balanceOf(FAKE_ACCOUNT_ONE)).toNumber()
+    );
+  
+    console.log(
+      "BTC Balance: ",
+      (await wbtcContract.balanceOf(FAKE_ACCOUNT_ONE)).toNumber()
+    );
+  
+    console.log(
+      "USDC Balance: ",
+      (await usdcContract.balanceOf(FAKE_ACCOUNT_ONE)).toNumber()
+    );*/
+  return {
+    lendingPool,
+  };
 }
 
-main()
+deploy()
   .then(() => process.exit(0))
   .catch((error) => {
     console.error(error);

@@ -9,6 +9,7 @@ import {IFactory} from "./interfaces/IFactory.sol";
 import {GeneralLogic} from "./libraries/GeneralLogic.sol";
 import {LendingPoolStorage} from "./LendingPoolStorage.sol";
 import {SafeMath} from "@openzeppelin/contracts/utils/math/SafeMath.sol";
+import "hardhat/console.sol";
 
 // TODO Noah
 contract LendingPool is ILendingPool, LendingPoolStorage {
@@ -257,7 +258,10 @@ contract LendingPool is ILendingPool, LendingPoolStorage {
     {
         // iterate smLpTokens and aggregate total debt
         uint256 length = smLpTokenList.length;
+        console.log(smLpTokenList.length);
         for (uint i = 0; i < length; i++) {
+            console.log(smLpTokenList[i]);
+            console.log(asset);
             _debt += ISmLpToken(smLpTokenList[i]).getDebt(asset);
         }
     }

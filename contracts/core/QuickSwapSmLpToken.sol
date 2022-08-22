@@ -13,6 +13,7 @@ import {IFactory} from "./interfaces/IFactory.sol";
 import {UnsignedCalc} from "./libraries/UnsignedCalc.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
+import "hardhat/console.sol";
 
 // TODO Oliver
 contract QuickSwapSmLpToken is ISmLpToken, ERC20, Ownable {
@@ -358,7 +359,7 @@ contract QuickSwapSmLpToken is ISmLpToken, ERC20, Ownable {
 
         uint256 _totalSupply = IUniswapV2Pair(UNDERLYING_ASSET_ADDRESS)
             .totalSupply();
-
+        console.log(tokenX, tokenY);
         uint256 _usdcPriceX = _priceOracle.getAssetPrice(tokenX);
         uint256 _usdcPriceY = _priceOracle.getAssetPrice(tokenY);
 
