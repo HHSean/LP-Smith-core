@@ -36,9 +36,17 @@ interface ISmLpToken is IERC20 {
             bool _isFirstDeposit
         );
 
-    function burn(address user, uint256 amount)
-        external
-        returns (bool _isCloseAll);
+    function burn(
+        address user,
+        address recipient,
+        uint256 amount
+    ) external returns (bool _isCloseAll);
+
+    function liquidate(
+        address liquidator,
+        address user,
+        uint256 repaidValue
+    ) external returns (uint256 _returnAmount);
 
     function realizeLp(address user, uint256 amount) external;
 
