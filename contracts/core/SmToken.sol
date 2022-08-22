@@ -14,7 +14,6 @@ contract SmToken is ISmToken, Ownable, ERC20 {
 
     string private _name;
     string private _symbol;
-    address _pool;
     address public override UNDERLYING_ASSET_ADDRESS;
     address public factory;
 
@@ -42,8 +41,10 @@ contract SmToken is ISmToken, Ownable, ERC20 {
         address user,
         uint256 amount, // underlying unit
         uint256 liquidityIndex
-    ) external onlyLendingPool returns (bool) {
-        // TODO mint token with exchange rate
+    ) external onlyLendingPool {
+        // mint token with exchange rate
+        uint256 amountToMint = totalSupply().mul(amount).div(liquidityIndex);
+        _mint(user, amountToMint);
     }
 
     function burn(
@@ -51,6 +52,8 @@ contract SmToken is ISmToken, Ownable, ERC20 {
         uint256 amount, // underlying unit
         uint256 liquidityIndex // debt of the asset
     ) external onlyLendingPool {
-        // TODO burn token with exchange rate
+        // burn token with exchange rate
+        uint256 amountToBurn = totalSupply().mul(amount).div(liquidityIndex);
+        _mint(user, amountToBurn);
     }
 }

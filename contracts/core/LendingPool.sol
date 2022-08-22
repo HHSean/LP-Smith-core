@@ -355,7 +355,7 @@ contract LendingPool is ILendingPool, LendingPoolStorage {
             .div(10**tokenFromDecimals);
 
         _transferReserveFromSmToken(tokenTo, msg.sender, _swapOutput, true);
-        // TOOD call ISmLpToken swap -> update onSale
+        // update onSale at ISmLpToken
         ISmLpToken(smLpTokenMap[lpTokenAddress]).decreasePendingOnSale(
             tokenFrom,
             amount
@@ -364,5 +364,7 @@ contract LendingPool is ILendingPool, LendingPoolStorage {
     }
 
     // TODO
-    function liquidation() external {}
+    function liquidation() external {
+        // TODO
+    }
 }
