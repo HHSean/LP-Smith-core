@@ -14,19 +14,15 @@ import {SafeMath} from "@openzeppelin/contracts/utils/math/SafeMath.sol";
 contract LendingPool is ILendingPool, LendingPoolStorage {
     using SafeMath for uint256;
 
-    // mapping(address => address) cdTokenMap; // CD: Certificate of Deposit; left-hand: underlying token; right-hand: cd Token address
-    mapping(address => address) smLpTokenMap; // left-hand: underlying token; right-hand: cd Token address
-    mapping(address => address) smTokenMap; // left-hand: underlying token; right-hand: cd Token address
-    mapping(address => ISmLpToken[]) smLpTokenListPerAsset; // smLpToken list of certain asset
     address public factory;
     uint80 constant HF_DECIMALS = 1000000;
 
     modifier onlySmLpToken(address asset) {
-        ISmLpToken[] storage smLpTokenList = smLpTokenListPerAsset[asset];
+        address[] storage smLpTokenList = smLpTokenListPerAsset[asset];
         uint256 length = smLpTokenList.length;
         bool flag = false;
         for (uint80 i = 0; i < length; i++) {
-            if (address(smLpTokenList[i]) == msg.sender) {
+            if (smLpTokenList[i] == msg.sender) {
                 flag = true;
             }
         }
@@ -254,7 +250,7 @@ contract LendingPool is ILendingPool, LendingPoolStorage {
         }
     }
 
-    function _getLpDebts(address asset, ISmLpToken[] storage smLpTokenList)
+    function _getLpDebts(address asset, address[] storage smLpTokenList)
         internal
         view
         returns (uint256 _debt)
@@ -262,22 +258,22 @@ contract LendingPool is ILendingPool, LendingPoolStorage {
         // iterate smLpTokens and aggregate total debt
         uint256 length = smLpTokenList.length;
         for (uint i = 0; i < length; i++) {
-            _debt += ISmLpToken(address(smLpTokenList[i])).getDebt(asset);
+            _debt += ISmLpToken(smLpTokenList[i]).getDebt(asset);
         }
     }
 
-    function _getPotentialOnSale(
-        address asset,
-        ISmLpToken[] storage smLpTokenList
-    ) internal view returns (bool _sign, uint256 _potentialOnSale) {
+    function _getPotentialOnSale(address asset, address[] storage smLpTokenList)
+        internal
+        view
+        returns (bool _sign, uint256 _potentialOnSale)
+    {
         // iterate smLpTokens and sum up potential on sale
         uint256 length = smLpTokenList.length;
         uint256 positivePotentialOnSale;
         uint256 negativePotentialOnSale;
         for (uint i = 0; i < length; i++) {
-            (bool sign, uint256 potentialOnSale) = ISmLpToken(
-                address(smLpTokenList[i])
-            ).getPotentialOnSale(asset);
+            (bool sign, uint256 potentialOnSale) = ISmLpToken(smLpTokenList[i])
+                .getPotentialOnSale(asset);
             if (sign == true) {
                 positivePotentialOnSale += potentialOnSale;
             } else {
@@ -299,18 +295,18 @@ contract LendingPool is ILendingPool, LendingPoolStorage {
         }
     }
 
-    function _getPendingOnSale(
-        address asset,
-        ISmLpToken[] storage smLpTokenList
-    ) internal view returns (bool _sign, uint256 _pendingOnSale) {
+    function _getPendingOnSale(address asset, address[] storage smLpTokenList)
+        internal
+        view
+        returns (bool _sign, uint256 _pendingOnSale)
+    {
         // iterate smLpTokens and sum up potential on sale
         uint256 length = smLpTokenList.length;
         uint256 positivePendingOnSale;
         uint256 negativePendingOnSale;
         for (uint i = 0; i < length; i++) {
-            (bool sign, uint256 pendingOnSale) = ISmLpToken(
-                address(smLpTokenList[i])
-            ).getPendingOnSale(asset);
+            (bool sign, uint256 pendingOnSale) = ISmLpToken(smLpTokenList[i])
+                .getPendingOnSale(asset);
             if (sign == true) {
                 positivePendingOnSale += pendingOnSale;
             } else {
@@ -334,7 +330,7 @@ contract LendingPool is ILendingPool, LendingPoolStorage {
         returns (uint256 _liquidityIndex)
     {
         ReserveData storage reserve = _reserves[asset];
-        ISmLpToken[] storage smLpTokenList = smLpTokenListPerAsset[asset];
+        address[] storage smLpTokenList = smLpTokenListPerAsset[asset];
         _liquidityIndex = reserve.depositAmount;
         _liquidityIndex -= _getLpDebts(asset, smLpTokenList);
         (bool sign0, uint256 potentialOnSale) = _getPotentialOnSale(

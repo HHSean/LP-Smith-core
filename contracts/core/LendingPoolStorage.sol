@@ -1,5 +1,7 @@
 pragma solidity ^0.8.9;
 
+import {ISmLpToken} from "./interfaces/ISmLpToken.sol";
+
 contract LendingPoolStorage {
     // ERC20
     struct ReserveData {
@@ -25,4 +27,8 @@ contract LendingPoolStorage {
 
     mapping(address => address[]) internal smLpTokenDepositListPerUser;
     mapping(address => address[]) internal reserveBorrowListPerUser;
+
+    mapping(address => address) smLpTokenMap; // left-hand: underlying token; right-hand: cd Token address
+    mapping(address => address) smTokenMap; // left-hand: underlying token; right-hand: cd Token address
+    mapping(address => address[]) smLpTokenListPerAsset; // smLpToken list of certain asset
 }
