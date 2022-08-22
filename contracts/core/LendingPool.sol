@@ -19,7 +19,7 @@ contract LendingPool is ILendingPool, LendingPoolStorage {
     address public factory;
     uint80 constant HF_DECIMALS = 1000000;
 
-    constructor(address _factory){
+    constructor(address _factory) {
         factory = _factory;
     }
 
@@ -109,7 +109,6 @@ contract LendingPool is ILendingPool, LendingPoolStorage {
         // transfer asset to smToken
         _transferReserveToSmToken(asset, msg.sender, amount, true);
         address smTokenAddress = address(smTokenMap[asset]);
-        console.log(smTokenAddress);
         uint256 liquidityIndex = getLiquidityIndex(asset);
         ISmToken(smTokenAddress).mint(msg.sender, amount, liquidityIndex);
     }
@@ -268,10 +267,7 @@ contract LendingPool is ILendingPool, LendingPoolStorage {
     {
         // iterate smLpTokens and aggregate total debt
         uint256 length = smLpTokenList.length;
-        console.log(smLpTokenList.length);
         for (uint i = 0; i < length; i++) {
-            console.log(smLpTokenList[i]);
-            console.log(asset);
             _debt += ISmLpToken(smLpTokenList[i]).getDebt(asset);
         }
     }
@@ -346,16 +342,20 @@ contract LendingPool is ILendingPool, LendingPoolStorage {
         ReserveData storage reserve = _reserves[asset];
         address[] storage smLpTokenList = smLpTokenListPerAsset[asset];
         _liquidityIndex = reserve.depositAmount;
+        console.log("1",_liquidityIndex);
         _liquidityIndex -= _getLpDebts(asset, smLpTokenList);
+        console.log("2",_liquidityIndex);
         (bool sign0, uint256 potentialOnSale) = _getPotentialOnSale(
             asset,
             smLpTokenList
         );
+    
         if (sign0) {
             _liquidityIndex += potentialOnSale;
         } else {
             _liquidityIndex -= potentialOnSale;
         }
+        console.log("3",_liquidityIndex);
         (bool sign1, uint256 pendingOnSale) = _getPendingOnSale(
             asset,
             smLpTokenList
@@ -365,6 +365,7 @@ contract LendingPool is ILendingPool, LendingPoolStorage {
         } else {
             _liquidityIndex -= pendingOnSale;
         }
+        console.log("4",_liquidityIndex);
     }
 
     function swap(
@@ -449,7 +450,8 @@ contract LendingPool is ILendingPool, LendingPoolStorage {
             reserveData.availAmount,
             reserveData.borrowAmount
         );
-
+        console.log(getLiquidityIndex(asset));
+        console.log("deposit", reserveData.depositAmount);
         _userDepositAmount = ISmToken(smTokenMap[asset]).getUserDepositAmount(
             user,
             getLiquidityIndex(asset)

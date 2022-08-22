@@ -49,12 +49,12 @@ contract SmToken is ISmToken, Ownable, ERC20 {
     ) external onlyLendingPool {
         // mint token with exchange rate
         uint256 amountToMint;
-        if (liquidityIndex == 0) {
-            console.log(underlyingDecimal);
+        if (totalSupply() == 0) {
             amountToMint = amount.mul(10**18).div(10**underlyingDecimal);
         } else {
             amountToMint = totalSupply().mul(amount).div(liquidityIndex);
         }
+        console.log("amountToMint", amountToMint);
         _mint(user, amountToMint);
     }
 
@@ -84,6 +84,9 @@ contract SmToken is ISmToken, Ownable, ERC20 {
     }
 
     function approveLendingPool() public {
-        IERC20(UNDERLYING_ASSET_ADDRESS).approve(IFactory(factory).getLendingPool(), type(uint256).max);
+        IERC20(UNDERLYING_ASSET_ADDRESS).approve(
+            IFactory(factory).getLendingPool(),
+            type(uint256).max
+        );
     }
 }

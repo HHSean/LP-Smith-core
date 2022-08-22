@@ -405,22 +405,21 @@ describe("test", async () => {
   it("temp", async () => {
     const { lendingPool, wethContract, ethUSDCLpTokenContract } =
       await loadFixture(deploy);
+
     await ethUSDCLpTokenContract.approve(
       lendingPool.address,
       hre.ethers.utils.parseUnits("1", 18)
     );
-    const res = await lendingPool.depositERC20LpToken(
+    const res3 = await lendingPool.depositERC20LpToken(
       QUICKSWAP_ETH_USDC_POOL_IN_POLYGON,
       hre.ethers.utils.parseUnits("1", 14)
     );
-    console.log(res);
 
-    const res2 = await lendingPool.borrow(
+    const res4 = await lendingPool.borrow(
       WETH,
       hre.ethers.utils.parseUnits("1", 18)
     );
-    console.log(res2);
-    /*
+
     await wethContract
       .connect(await hre.ethers.getSigner(FAKE_ACCOUNT_ZERO))
       .approve(lendingPool.address, hre.ethers.utils.parseUnits("10000", 18));
@@ -428,8 +427,8 @@ describe("test", async () => {
       WETH,
       hre.ethers.utils.parseUnits("1", 18)
     );
+    console.log("call get reserve");
     const res2 = await lendingPool.getReserveData(FAKE_ACCOUNT_ZERO, WETH);
-    console.log(res);
-    console.log(res2);*/
+    console.log(res2);
   });
 });
