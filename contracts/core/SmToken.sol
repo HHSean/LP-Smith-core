@@ -84,6 +84,6 @@ contract SmToken is ISmToken, Ownable, ERC20 {
     }
 
     function approveLendingPool() public {
-        approve(IFactory(factory).getLendingPool(), type(uint256).max);
+        IERC20(UNDERLYING_ASSET_ADDRESS).approve(IFactory(factory).getLendingPool(), type(uint256).max);
     }
 }

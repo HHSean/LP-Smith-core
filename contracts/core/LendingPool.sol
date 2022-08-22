@@ -6,6 +6,7 @@ import {ISmLpToken} from "./interfaces/ISmLpToken.sol";
 import {ISmToken} from "./interfaces/ISmToken.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IFactory} from "./interfaces/IFactory.sol";
+import {IUniswapV2Pair} from "./interfaces/IUniswapV2Pair.sol";
 import {GeneralLogic} from "./libraries/GeneralLogic.sol";
 import {LendingPoolStorage} from "./LendingPoolStorage.sol";
 import {SafeMath} from "@openzeppelin/contracts/utils/math/SafeMath.sol";
@@ -17,6 +18,10 @@ contract LendingPool is ILendingPool, LendingPoolStorage {
 
     address public factory;
     uint80 constant HF_DECIMALS = 1000000;
+
+    constructor(address _factory){
+        factory = _factory;
+    }
 
     modifier onlySmLpToken(address asset) {
         address[] storage smLpTokenList = smLpTokenListPerAsset[asset];
@@ -65,7 +70,7 @@ contract LendingPool is ILendingPool, LendingPoolStorage {
         console.log("balance check");
         console.log(amount);
         console.log(IERC20(lpTokenAddress).balanceOf(msg.sender));
-        IERC20(lpTokenAddress).transferFrom(
+        IUniswapV2Pair(lpTokenAddress).transferFrom(
             msg.sender,
             smLpTokenAddress,
             amount

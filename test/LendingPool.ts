@@ -78,14 +78,14 @@ async function deploy() {
 
   await quickSwapStrategy.deployed();
   /*
-      const ChainLinkPriceOracle = await hre.ethers.getContractFactory(
-        "ChainLinkPriceOracle"
-      );
-    
-      const chainLinkPriceOracle = await ChainLinkPriceOracle.deploy();
-    
-      await chainLinkPriceOracle.deployed();
-    */
+            const ChainLinkPriceOracle = await hre.ethers.getContractFactory(
+              "ChainLinkPriceOracle"
+            );
+          
+            const chainLinkPriceOracle = await ChainLinkPriceOracle.deploy();
+          
+            await chainLinkPriceOracle.deployed();
+          */
   const ChainLinkPriceOracle = await hre.ethers.getContractFactory(
     "PriceOracle"
   );
@@ -108,21 +108,22 @@ async function deploy() {
 
   await generalLogic.deployed();
 
+  const Factory = await hre.ethers.getContractFactory("Factory");
+
+  const factory = await Factory.deploy();
+
+  await factory.deployed();
+
   const LendingPool = await hre.ethers.getContractFactory("LendingPool", {
     libraries: {
       GeneralLogic: generalLogic.address,
     },
   });
 
-  const lendingPool = await LendingPool.deploy();
+  const lendingPool = await LendingPool.deploy(factory.address);
 
   await lendingPool.deployed();
 
-  const Factory = await hre.ethers.getContractFactory("Factory");
-
-  const factory = await Factory.deploy();
-
-  await factory.deployed();
   await factory.setPriceOracle(chainLinkPriceOracle.address);
   await factory.setLendingPool(lendingPool.address);
 
@@ -244,13 +245,13 @@ async function deploy() {
   );
   console.log("check2");
   /*
-      const lpTokenContract = await hre.ethers.getContractAt(
-        "IERC20",
-        QUICKSWAP_ETH_USDC_POOL_IN_POLYGON
-      );
-    
-      await lpTokenContract.approve(quickSwapStrategy.address, 10000 * 10 ** 6);
-    */
+            const lpTokenContract = await hre.ethers.getContractAt(
+              "IERC20",
+              QUICKSWAP_ETH_USDC_POOL_IN_POLYGON
+            );
+          
+            await lpTokenContract.approve(quickSwapStrategy.address, 10000 * 10 ** 6);
+          */
 
   const ethUsdLpTokenContract = await hre.ethers.getContractAt(
     "IERC20",
@@ -380,32 +381,46 @@ async function deploy() {
   console.log("Account 2 Balance");
   console.log("Public Address: ", "0x70997970C51812dc3A010C7d01b50e0d17dc79C8");
   /*
-      console.log(
-        "WETH Balance: ",
-        (await wethContract.balanceOf(FAKE_ACCOUNT_ONE)).toNumber()
-      );
-    
-      console.log(
-        "BTC Balance: ",
-        (await wbtcContract.balanceOf(FAKE_ACCOUNT_ONE)).toNumber()
-      );
-    
-      console.log(
-        "USDC Balance: ",
-        (await usdcContract.balanceOf(FAKE_ACCOUNT_ONE)).toNumber()
-      );*/
+            console.log(
+              "WETH Balance: ",
+              (await wethContract.balanceOf(FAKE_ACCOUNT_ONE)).toNumber()
+            );
+          
+            console.log(
+              "BTC Balance: ",
+              (await wbtcContract.balanceOf(FAKE_ACCOUNT_ONE)).toNumber()
+            );
+          
+            console.log(
+              "USDC Balance: ",
+              (await usdcContract.balanceOf(FAKE_ACCOUNT_ONE)).toNumber()
+            );*/
   return {
     lendingPool,
     wethContract,
+    ethUSDCLpTokenContract,
   };
 }
-
 describe("test", async () => {
   it("temp", async () => {
-    const { lendingPool, wethContract } = await loadFixture(deploy);
+    const { lendingPool, wethContract, ethUSDCLpTokenContract } =
+      await loadFixture(deploy);
+    await ethUSDCLpTokenContract.approve(
+      lendingPool.address,
+      hre.ethers.utils.parseUnits("1", 18)
+    );
+    const res = await lendingPool.depositERC20LpToken(
+      QUICKSWAP_ETH_USDC_POOL_IN_POLYGON,
+      hre.ethers.utils.parseUnits("1", 14)
+    );
+    console.log(res);
 
-    //const res = await lendingPool.depositERC20LpToken(QUICKSWAP_ETH_USDC_POOL_IN_POLYGON, hre.ethers.utils.parseUnits("1", 10));
-    //console.log(res);
+    const res2 = await lendingPool.borrow(
+      WETH,
+      hre.ethers.utils.parseUnits("1", 18)
+    );
+    console.log(res2);
+    /*
     await wethContract
       .connect(await hre.ethers.getSigner(FAKE_ACCOUNT_ZERO))
       .approve(lendingPool.address, hre.ethers.utils.parseUnits("10000", 18));
@@ -415,6 +430,6 @@ describe("test", async () => {
     );
     const res2 = await lendingPool.getReserveData(FAKE_ACCOUNT_ZERO, WETH);
     console.log(res);
-    console.log(res2);
+    console.log(res2);*/
   });
 });
