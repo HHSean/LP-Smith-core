@@ -1,8 +1,9 @@
 pragma solidity ^0.8.9;
 
 import {ISmLpToken} from "./interfaces/ISmLpToken.sol";
+import {ILendingPoolStorage} from "./interfaces/ILendingPoolStorage.sol";
 
-contract LendingPoolStorage {
+contract LendingPoolStorage is ILendingPoolStorage {
     // ERC20
     struct ReserveData {
         uint256 depositAmount;
