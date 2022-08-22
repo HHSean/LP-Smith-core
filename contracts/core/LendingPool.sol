@@ -178,7 +178,8 @@ contract LendingPool is ILendingPool, LendingPoolStorage {
             "Not enough fund to pass"
         );
         IERC20(asset).transferFrom(from, smToken, amount);
-        ReserveData storage reserve = _reserves[smToken];
+        ReserveData storage reserve = _reserves[asset];
+
         reserve.availAmount += amount;
         if (isDeposit) {
             reserve.depositAmount += amount;
@@ -440,6 +441,7 @@ contract LendingPool is ILendingPool, LendingPoolStorage {
             reserveData.availAmount,
             reserveData.borrowAmount
         );
+
         _userDepositAmount = ISmToken(smTokenMap[asset]).getUserDepositAmount(
             user,
             getLiquidityIndex(asset)

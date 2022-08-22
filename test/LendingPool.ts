@@ -388,6 +388,8 @@ describe("test", async () => {
       WETH,
       hre.ethers.utils.parseUnits("1", 18)
     );
+    const res2 = await lendingPool.getReserveData(FAKE_ACCOUNT_ZERO, WETH);
     console.log(res);
+    console.log(res2);
   });
 });
