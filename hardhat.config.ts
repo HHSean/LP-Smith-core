@@ -18,15 +18,15 @@ const config: HardhatUserConfig = {
     hardhat: {
       chainId: 137,
       forking: {
-        url: `${process.env.ALCHEMY_POLYGON_PROVIDER_URL!}`,
+        url: `${process.env.POLYGON_MAINNET_NODE_URL!}`,
       },
       accounts: [
         {
-          privateKey: process.env.ACCXOUNT_ZERO_PRIVATE_KEY!,
+          privateKey: process.env.ACCOUNT_ZERO_PRIVATE_KEY!,
           balance: "1000000000000000000000",
         },
         {
-          privateKey: process.env.ACCXOUNT_ONE_PRIVATE_KEY!,
+          privateKey: process.env.ACCOUNT_ONE_PRIVATE_KEY!,
           balance: "1000000000000000000000",
         },
       ],

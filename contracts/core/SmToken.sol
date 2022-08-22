@@ -54,7 +54,7 @@ contract SmToken is ISmToken, Ownable, ERC20 {
     ) external onlyLendingPool {
         // burn token with exchange rate
         uint256 amountToBurn = totalSupply().mul(amount).div(liquidityIndex);
-        _mint(user, amountToBurn);
+        _burn(user, amountToBurn);
     }
 
     function getUserDepositAmount(address user, uint256 liquidityIndex)
