@@ -126,7 +126,8 @@ contract QuickSwapSmLpToken is ISmLpToken, ERC20, Ownable {
         )
     {
         (_amountX, _amountY) = _beforeMint(amount);
-
+        console.log(_amountX, _amountY);
+        
         _isFirstDeposit = userStatus[user].totalLpToken == 0 ? true : false;
 
         userStatus[user].totalLpToken = userStatus[user].totalLpToken.add(

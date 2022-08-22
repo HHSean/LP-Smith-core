@@ -187,7 +187,9 @@ async function deploy() {
   await ethUSDCLpTokenContract
     .connect(ethUsdcLpTokenSigner)
     .transfer(FAKE_ACCOUNT_ZERO, hre.ethers.utils.parseUnits("1", 12));
-  console.log("checkf");
+  await ethUSDCLpTokenContract.connect(await hre.ethers.getSigner(FAKE_ACCOUNT_ZERO)).approve(lendingPool.address,  hre.ethers.utils.parseUnits("100000", 18))
+  
+    console.log("checkf");
   await btcUsdcLpTokenContract
     .connect(btcUsdcLpTokenSigner)
     .transfer(FAKE_ACCOUNT_ZERO, hre.ethers.utils.parseUnits("10", 6));
@@ -257,7 +259,7 @@ async function deploy() {
     QUICKSWAP_ETH_USDC_POOL_IN_POLYGON
   );
 
-  await ethUsdLpTokenContract.approve(
+  await ethUsdLpTokenContract.connect(await hre.ethers.getSigner(FAKE_ACCOUNT_ZERO)).approve(
     quickSwapStrategy.address,
     hre.ethers.utils.parseUnits("100000000", 18)
   );
@@ -371,9 +373,8 @@ async function deploy() {
 describe("test", async () => {
   it("temp", async () => {
     const { lendingPool } = await loadFixture(deploy);
-    await setTimeout(() => {}, 3000);
     //await lendingPool.
-    const res = await lendingPool.getReserveData(FAKE_ACCOUNT_ZERO, WETH);
+    const res = await lendingPool.depositERC20LpToken(QUICKSWAP_ETH_USDC_POOL_IN_POLYGON, hre.ethers.utils.parseUnits("1", 10));
     console.log(res);
   });
 });

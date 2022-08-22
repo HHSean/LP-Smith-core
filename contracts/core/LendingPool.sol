@@ -173,7 +173,7 @@ contract LendingPool is ILendingPool, LendingPoolStorage {
     ) private {
         address smToken = smTokenMap[asset];
         require(
-            IERC20(asset).balanceOf(from) > amount,
+            IERC20(asset).balanceOf(from) >= amount,
             "Not enough fund to pass"
         );
         IERC20(asset).transferFrom(from, smToken, amount);
