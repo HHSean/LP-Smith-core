@@ -207,6 +207,16 @@ contract QuickSwapSmLpToken is ISmLpToken, ERC20, Ownable {
         _burn(address(this), amount);
     }
 
+    function liquidate(
+        address liquidator,
+        address user,
+        uint256 repaidValue
+    ) external onlyLendingPool {
+        (, , uint256 lpPrice) = _getDebt();
+        uint256 returnAmount = repaidValue.mul(10500).div(10000).div(lpPrice);
+        
+    }
+
     function realizeLp(
         address user,
         uint256 amount // LP token
