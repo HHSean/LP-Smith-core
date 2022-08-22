@@ -100,7 +100,8 @@ contract LendingPool is ILendingPool, LendingPoolStorage {
     ) external override {
         // transfer asset to smToken
         _transferReserveToSmToken(asset, msg.sender, amount, true);
-        address smTokenAddress = address(smLpTokenMap[asset]);
+        address smTokenAddress = address(smTokenMap[asset]);
+        console.log(smTokenAddress);
         uint256 liquidityIndex = getLiquidityIndex(asset);
         ISmToken(smTokenAddress).mint(msg.sender, amount, liquidityIndex);
     }

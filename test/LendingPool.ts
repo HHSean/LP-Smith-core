@@ -187,9 +187,11 @@ async function deploy() {
   await ethUSDCLpTokenContract
     .connect(ethUsdcLpTokenSigner)
     .transfer(FAKE_ACCOUNT_ZERO, hre.ethers.utils.parseUnits("1", 12));
-  await ethUSDCLpTokenContract.connect(await hre.ethers.getSigner(FAKE_ACCOUNT_ZERO)).approve(lendingPool.address,  hre.ethers.utils.parseUnits("100000", 18))
-  
-    console.log("checkf");
+  await ethUSDCLpTokenContract
+    .connect(await hre.ethers.getSigner(FAKE_ACCOUNT_ZERO))
+    .approve(lendingPool.address, hre.ethers.utils.parseUnits("100000", 18));
+
+  console.log("checkf");
   await btcUsdcLpTokenContract
     .connect(btcUsdcLpTokenSigner)
     .transfer(FAKE_ACCOUNT_ZERO, hre.ethers.utils.parseUnits("10", 6));
@@ -259,10 +261,12 @@ async function deploy() {
     QUICKSWAP_ETH_USDC_POOL_IN_POLYGON
   );
 
-  await ethUsdLpTokenContract.connect(await hre.ethers.getSigner(FAKE_ACCOUNT_ZERO)).approve(
-    quickSwapStrategy.address,
-    hre.ethers.utils.parseUnits("100000000", 18)
-  );
+  await ethUsdLpTokenContract
+    .connect(await hre.ethers.getSigner(FAKE_ACCOUNT_ZERO))
+    .approve(
+      quickSwapStrategy.address,
+      hre.ethers.utils.parseUnits("100000000", 18)
+    );
 
   const TokenDecimal = await hre.ethers.getContractFactory("TokenDecimal");
 
@@ -367,14 +371,23 @@ async function deploy() {
   );*/
   return {
     lendingPool,
+    wethContract,
   };
 }
 
 describe("test", async () => {
   it("temp", async () => {
-    const { lendingPool } = await loadFixture(deploy);
-    //await lendingPool.
-    const res = await lendingPool.depositERC20LpToken(QUICKSWAP_ETH_USDC_POOL_IN_POLYGON, hre.ethers.utils.parseUnits("1", 10));
+    const { lendingPool, wethContract } = await loadFixture(deploy);
+
+    //const res = await lendingPool.depositERC20LpToken(QUICKSWAP_ETH_USDC_POOL_IN_POLYGON, hre.ethers.utils.parseUnits("1", 10));
+    //console.log(res);
+    await wethContract
+      .connect(await hre.ethers.getSigner(FAKE_ACCOUNT_ZERO))
+      .approve(lendingPool.address, hre.ethers.utils.parseUnits("10000", 18));
+    const res = await lendingPool.deposit(
+      WETH,
+      hre.ethers.utils.parseUnits("1", 18)
+    );
     console.log(res);
   });
 });
