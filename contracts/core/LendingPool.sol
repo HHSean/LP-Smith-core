@@ -195,8 +195,8 @@ contract LendingPool is ILendingPool, LendingPoolStorage {
         bool isWithdraw
     ) private {
         address smTokenAddress = smTokenMap[asset];
-        ReserveData storage reserve = _reserves[smTokenAddress];
-        require(reserve.availAmount > amount, "Not enough fund to pass");
+        ReserveData storage reserve = _reserves[asset];
+        require(reserve.availAmount >= amount, "Not enough fund to pass");
         IERC20(asset).transferFrom(smTokenAddress, to, amount);
         reserve.availAmount -= amount;
         if (isWithdraw) {
