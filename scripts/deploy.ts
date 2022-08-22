@@ -118,7 +118,7 @@ async function main() {
     WBTC_WHALE_ADDRESS_IN_POLYGON,
   ];
 
-  const whaleRequestPromiseAll = [];
+  const whaleRequestPromiseAll: any[] = [];
 
   for (let i = 0; i < whaleArray.length; i++) {
     whaleRequestPromiseAll.push(
@@ -202,8 +202,8 @@ async function main() {
   await quickSwapStrategy.mint(
     USDT,
     USDC,
-    10 * 10 ** 6,
-    10 * 10 ** 6,
+    1000 * 10 ** 6,
+    1000 * 10 ** 6,
     FAKE_ACCOUNT_ZERO
   );
 
@@ -214,6 +214,7 @@ async function main() {
 
   await lpTokenContract.approve(quickSwapStrategy.address, 10000 * 10 ** 6);
 
+  /*
   await quickSwapStrategy.mintWithETH(
     USDC,
     10 * 10 ** 6,
@@ -224,7 +225,8 @@ async function main() {
       value: hre.ethers.BigNumber.from((10 * 10 ** 18).toString()),
     }
   );
-
+  */
+  /*
   const ethUsdLpTokenContract = await hre.ethers.getContractAt(
     "IERC20",
     QUICKSWAP_ETH_USDC_POOL_IN_POLYGON
@@ -234,7 +236,7 @@ async function main() {
     quickSwapStrategy.address,
     10000000 * 10 ** 6
   );
-
+*/
   const TokenDecimal = await hre.ethers.getContractFactory("TokenDecimal");
 
   const tokenDecimal = await TokenDecimal.deploy();
@@ -244,51 +246,47 @@ async function main() {
   const QuickSwapSmLpToken = await hre.ethers.getContractFactory(
     "QuickSwapSmLpToken"
   );
-
   const quickSwapSmLpToken = await QuickSwapSmLpToken.deploy(
-    "ETH_USDT_POOL",
-    "smQuickSwapETHUSDC",
-    1,
+    "USDC_USDT_POOL",
+    "smQuickSwapUSDCUSDT",
+    7000,
     factory.address,
-    QUICKSWAP_ETH_USDC_POOL_IN_POLYGON,
+    QUICKSWAP_USDC_USDT_POOL_IN_POLYGON,
     quickSwapStrategy.address,
     tokenDecimal.address
   );
-
-  await lendingPool.addSmLpToken(
-    QUICKSWAP_ETH_USDC_POOL_IN_POLYGON,
-    quickSwapSmLpToken.address,
-    WETH,
-    USDC
-  );
-
   await quickSwapSmLpToken.deployed();
 
-  const ETH_SM_TOKEN = await hre.ethers.getContractFactory("SmToken");
+  await lendingPool.addSmLpToken(
+    QUICKSWAP_USDC_USDT_POOL_IN_POLYGON,
+    quickSwapSmLpToken.address,
+    18
+  );
+
+  const USDT_SM_TOKEN = await hre.ethers.getContractFactory("SmToken");
 
   const USDC_SM_TOKEN = await hre.ethers.getContractFactory("SmToken");
 
-  const ethSmTokenContract = await ETH_SM_TOKEN.deploy(
-    "ETHSMToken",
-    "smETH",
-    WETH,
+  const usdtSmTokenContract = await USDT_SM_TOKEN.deploy(
+    "USDTSMToken",
+    "smUSDT",
+    USDT,
     factory.address
   );
+  await usdtSmTokenContract.deployed();
 
-  await ethSmTokenContract.deployed();
-
-  const usdcSmToken = await USDC_SM_TOKEN.deploy(
+  const usdcSmTokenContract = await USDC_SM_TOKEN.deploy(
     "USDCSMToken",
     "smUSDC",
     USDC,
     factory.address
   );
 
-  await usdcSmToken.deployed();
+  await usdcSmTokenContract.deployed();
 
   // TODO
-  await lendingPool.addSmToken(ethSmTokenContract.address, WETH, 18);
-  await lendingPool.addSmToken(ethSmTokenContract.address, USDC, 6);
+  await lendingPool.addSmToken(usdtSmTokenContract.address, USDT, 6);
+  await lendingPool.addSmToken(usdcSmTokenContract.address, USDC, 6);
 
   console.log("배포 완료");
   console.log("Deployed Factory Address: ", factory.address);
@@ -298,17 +296,17 @@ async function main() {
   );
   console.log("Deployed Lending Pool Address: ", lendingPool.address);
   console.log(
-    "Deployed ETH/USDC QuickSwapSmLpToken Contract Address: ",
+    "Deployed USDC/USDT QuickSwapSmLpToken Contract Address: ",
     quickSwapSmLpToken.address
   );
-  console.log("Deployed SM ETH Token Address: ", ethSmTokenContract.address);
-  console.log("Deployed SM USDC Token Address: ", usdcSmToken.address);
+  console.log("Deployed SM USDT Token Address: ", usdtSmTokenContract.address);
+  console.log("Deployed SM USDC Token Address: ", usdcSmTokenContract.address);
 
   console.log();
   console.log("Account 1 Balance");
   console.log("Public Address: ", "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266");
   console.log(
-    "ETH/USDC LP Token Balance: ",
+    "USDC/USDT LP Token Balance: ",
     (await ethUSDCLpTokenContract.balanceOf(FAKE_ACCOUNT_ZERO)).toNumber()
   );
   console.log(
