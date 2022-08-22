@@ -76,4 +76,11 @@ interface ILendingPool {
         external
         view
         returns (uint256 _borrowableValue);
+
+    function getHealthFactor(address user)
+        external
+        view
+        returns (
+            uint256 _healthFactor // decimal 6
+        );
 }

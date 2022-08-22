@@ -19,6 +19,7 @@ contract LendingPool is ILendingPool, LendingPoolStorage {
     mapping(address => address) smTokenMap; // left-hand: underlying token; right-hand: cd Token address
     mapping(address => ISmLpToken[]) smLpTokenListPerAsset; // smLpToken list of certain asset
     address public factory;
+    uint80 constant HF_DECIMALS = 1000000;
 
     modifier onlySmLpToken(address asset) {
         ISmLpToken[] storage smLpTokenList = smLpTokenListPerAsset[asset];
@@ -39,6 +40,23 @@ contract LendingPool is ILendingPool, LendingPoolStorage {
             getBorrowableValue(msg.sender) > getBorrowedValue(msg.sender),
             "LP token not withdrawable"
         );
+    }
+
+    function getHealthFactor(address user)
+        public
+        view
+        returns (
+            uint256 _healthFactor // decimal 6
+        )
+    {
+        uint256 borrowedAmount = getBorrowedValue(user);
+        if (borrowedAmount == 0) {
+            _healthFactor = type(uint256).max;
+        } else {
+            _healthFactor = getBorrowableValue(user).mul(HF_DECIMALS).div(
+                borrowedAmount
+            );
+        }
     }
 
     function depositERC20LpToken(
@@ -129,10 +147,18 @@ contract LendingPool is ILendingPool, LendingPoolStorage {
         override
         returns (uint256)
     {
+        _repay(msg.sender, asset, amount);
+    }
+
+    function _repay(
+        address user,
+        address asset,
+        uint256 amount
+    ) internal returns (uint256) {
         // transfer asset to smToken
-        _transferReserveToSmToken(asset, msg.sender, amount, false);
+        _transferReserveToSmToken(asset, user, amount, false);
         // update borrowed amount of user
-        _userDebtDatas[asset][msg.sender].borrowedAmount -= amount;
+        _userDebtDatas[asset][user].borrowedAmount -= amount;
     }
 
     function requestFund(address asset, uint256 amount)
@@ -363,8 +389,22 @@ contract LendingPool is ILendingPool, LendingPoolStorage {
         require(_swapOutput >= minimumReceive, "Received not much");
     }
 
-    // TODO
-    function liquidation() external {
-        // TODO
+    function liquidation(
+        address user,
+        address tokenToRepay,
+        uint256 amountToRepay,
+        address collateralToReceive
+    ) external {
+        uint256 prevHF = getHealthFactor(user);
+        require(prevHF < HF_DECIMALS, "User not liquidatable");
+
+        // repay amount to repay for user
+        _repay(user, tokenToRepay, amountToRepay);
+
+        // TODO liquidate position
+
+        // check HF improvement
+        uint256 postHF = getHealthFactor(user);
+        require(postHF > prevHF, "No HF improvement after liquidation");
     }
 }
