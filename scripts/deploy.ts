@@ -153,7 +153,7 @@ async function deploy() {
   const usdtSigner = await hre.ethers.getSigner(USDT_WHALE_ADDRESS_IN_POLYGON);
   const wethSigner = await hre.ethers.getSigner(WETH_WHALE_ADDRESS_IN_POLYGON);
   const wbtcSigner = await hre.ethers.getSigner(WBTC_WHALE_ADDRESS_IN_POLYGON);
-
+  const defaultSigner = await hre.ethers.getSigner(FAKE_ACCOUNT_ONE);
   const ethUsdcLpTokenSigner = await hre.ethers.getSigner(
     QUICKSWAP_ETH_USDC_LP_TOKEN_WHALE
   );
@@ -314,6 +314,18 @@ async function deploy() {
   await lendingPool.addSmToken(ethSmTokenContract.address, WETH, 18);
   await lendingPool.addSmToken(usdcSmTokenContract.address, USDC, 6);
 
+  await ethSmTokenContract.approveLendingPool();
+  await usdcSmTokenContract.approveLendingPool();
+
+  console.log("default setting")
+  wethContract.connect(defaultSigner).approve(lendingPool.address, hre.ethers.utils.parseUnits("10000", 18))
+  usdcContract.connect(defaultSigner).approve(lendingPool.address, hre.ethers.utils.parseUnits("1000000", 6))
+  ethUSDCLpTokenContract.connect(ethUsdcLpTokenSigner).transfer(FAKE_ACCOUNT_ONE, hre.ethers.utils.parseUnits("1", 15))
+  ethUSDCLpTokenContract.connect(defaultSigner).approve(lendingPool.address, hre.ethers.utils.parseUnits("100000", 18))
+  await lendingPool.deposit(WETH, hre.ethers.utils.parseUnits("5", 18))
+  await lendingPool.deposit(USDC, hre.ethers.utils.parseUnits("10000", 6));
+  await lendingPool.depositERC20LpToken(QUICKSWAP_ETH_USDC_POOL_IN_POLYGON, hre.ethers.utils.parseUnits("1", 15))
+
   console.log("배포 완료");
   console.log("Deployed Factory Address: ", factory.address);
   console.log(
@@ -325,7 +337,7 @@ async function deploy() {
     "Deployed ETH/USDC QuickSwapSmLpToken Contract Address: ",
     quickSwapSmLpToken.address
   );
-  console.log("Deployed SM USDT Token Address: ", ethSmTokenContract.address);
+  console.log("Deployed SM ETH Token Address: ", ethSmTokenContract.address);
   console.log("Deployed SM USDC Token Address: ", usdcSmTokenContract.address);
 
   console.log();
