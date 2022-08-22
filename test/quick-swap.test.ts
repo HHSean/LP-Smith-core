@@ -46,7 +46,39 @@ const QUICKSWAP_USDC_USDT_POOL_IN_POLYGON =
   "0x2cf7252e74036d1da831d11089d326296e64a728";
 
 describe("Quick Swap Test", () => {
-  before(async () => {
+  before(async () => {});
+
+  async function deployTokenFixture() {
+    const QuickSwapStrategy = await hre.ethers.getContractFactory(
+      "QuickSwapStrategy"
+    );
+
+    const quickSwapStrategy = await QuickSwapStrategy.deploy(
+      QUICK_SWAP_ROUTER_02_ADDRESS_IN_POLYGON_MAINNET
+    );
+
+    const ChainLinkPriceOracle = await hre.ethers.getContractFactory(
+      "ChainLinkPriceOracle"
+    );
+
+    const chainLinkPriceOracle = await ChainLinkPriceOracle.deploy();
+
+    const GeneralLogic = await hre.ethers.getContractFactory("GeneralLogic");
+
+    const generalLogic = await GeneralLogic.deploy();
+
+    const LendingPool = await hre.ethers.getContractFactory("LendingPool", {
+      libraries: {
+        GeneralLogic: generalLogic.address,
+      },
+    });
+
+    const lendingPool = await LendingPool.deploy();
+
+    const Factory = await hre.ethers.getContractFactory("Factory");
+
+    const factory = await Factory.deploy();
+
     await hre.network.provider.request({
       method: "hardhat_impersonateAccount",
       params: [USDC_WHALE_ADDRESS_IN_POLYGON],
@@ -66,16 +98,6 @@ describe("Quick Swap Test", () => {
       method: "hardhat_impersonateAccount",
       params: [WETH_WHALE_ADDRESS_IN_POLYGON],
     });
-  });
-
-  async function deployTokenFixture() {
-    const QuickSwapStrategy = await hre.ethers.getContractFactory(
-      "QuickSwapStrategy"
-    );
-
-    const quickSwapStrategy = await QuickSwapStrategy.deploy(
-      QUICK_SWAP_ROUTER_02_ADDRESS_IN_POLYGON_MAINNET
-    );
 
     const usdcSigner = await ethers.getSigner(USDC_WHALE_ADDRESS_IN_POLYGON);
     const usdtSigner = await ethers.getSigner(USDT_WHALE_ADDRESS_IN_POLYGON);
@@ -98,8 +120,83 @@ describe("Quick Swap Test", () => {
     await usdcContract.approve(quickSwapStrategy.address, 100000 * 10 ** 6);
     await usdtContract.approve(quickSwapStrategy.address, 100000 * 10 ** 6);
 
+    await quickSwapStrategy.mint(
+      USDT,
+      USDC,
+      10 * 10 ** 6,
+      10 * 10 ** 6,
+      FAKE_ACCOUNT_ZERO
+    );
+
+    const lpTokenContract = await ethers.getContractAt(
+      "IERC20",
+      QUICKSWAP_USDC_USDT_POOL_IN_POLYGON
+    );
+
+    await lpTokenContract.approve(quickSwapStrategy.address, 10000 * 10 ** 6);
+
+    console.log("await lpTokenContract.balanceOf(FAKE_ACCOUNT_ZERO)");
+    let message = await lpTokenContract.balanceOf(FAKE_ACCOUNT_ZERO);
+    console.log(message.toNumber());
+
+    await quickSwapStrategy.mintWithETH(
+      USDC,
+      10 * 10 ** 6,
+      0,
+      0,
+      FAKE_ACCOUNT_ZERO,
+      {
+        value: ethers.BigNumber.from((10 * 10 ** 18).toString()),
+      }
+    );
+
+    const ethUsdLpTokenContract = await ethers.getContractAt(
+      "IERC20",
+      QUICKSWAP_ETH_USDC_POOL_IN_POLYGON
+    );
+
+    await ethUsdLpTokenContract.approve(
+      quickSwapStrategy.address,
+      10000000 * 10 ** 6
+    );
+
+    const QuickSwapSmLpToken = await hre.ethers.getContractFactory(
+      "QuickSwapSmLpToken"
+    );
+
+    const quickSwapSmLpToken = await QuickSwapSmLpToken.deploy(
+      "ETH_USDT_POOL",
+      "ETH",
+      1,
+      factory.address,
+      QUICKSWAP_ETH_USDC_POOL_IN_POLYGON,
+      quickSwapStrategy.address
+    );
+
+    const ETH_SM_TOKEN = await hre.ethers.getContractFactory("SmToken");
+
+    const USDC_SM_TOKEN = await hre.ethers.getContractFactory("SmToken");
+
+    const ethSmTokenContract = await ETH_SM_TOKEN.deploy(
+      "ETHSMToken",
+      "ETHSM",
+      WETH,
+      factory.address
+    );
+
+    const usdcSmToken = await USDC_SM_TOKEN.deploy(
+      "USDCSMToken",
+      "USDCSM",
+      USDC,
+      factory.address
+    );
+
     return {
       quickSwapStrategy,
+      chainLinkPriceOracle,
+      lendingPool,
+      factory,
+      quickSwapSmLpToken,
       usdcSigner,
       usdtSigner,
       usdcContract,
@@ -128,22 +225,7 @@ describe("Quick Swap Test", () => {
     // given
     const { quickSwapStrategy } = await loadFixture(deployTokenFixture);
 
-    const lpTokenContract = await ethers.getContractAt(
-      "IERC20",
-      QUICKSWAP_USDC_USDT_POOL_IN_POLYGON
-    );
-
     // when
-    const addLiquidityResult = await quickSwapStrategy.mint(
-      USDT,
-      USDC,
-      10 * 10 ** 6,
-      10 * 10 ** 6,
-      FAKE_ACCOUNT_ZERO
-    );
-
-    await lpTokenContract.approve(quickSwapStrategy.address, 10000 * 10 ** 6);
-
     const removeLiquidityResult = await quickSwapStrategy.burn(
       USDT,
       USDC,
@@ -153,7 +235,6 @@ describe("Quick Swap Test", () => {
     );
 
     // then
-    expect(addLiquidityResult).to.not.throws;
     expect(removeLiquidityResult).to.not.throws;
   });
 
@@ -196,28 +277,7 @@ describe("Quick Swap Test", () => {
     // given
     const { quickSwapStrategy } = await loadFixture(deployTokenFixture);
 
-    const lpTokenContract = await ethers.getContractAt(
-      "IERC20",
-      QUICKSWAP_ETH_USDC_POOL_IN_POLYGON
-    );
-
     // when
-    const addLiquidityResult = await quickSwapStrategy.mintWithETH(
-      USDC,
-      10 * 10 ** 6,
-      0,
-      0,
-      FAKE_ACCOUNT_ZERO,
-      {
-        value: ethers.BigNumber.from((10 * 10 ** 18).toString()),
-      }
-    );
-
-    await lpTokenContract.approve(
-      quickSwapStrategy.address,
-      10000000 * 10 ** 6
-    );
-
     const removeLiquidityResult = await quickSwapStrategy.burnWithETH(
       USDC,
       QUICKSWAP_ETH_USDC_POOL_IN_POLYGON,
@@ -228,7 +288,6 @@ describe("Quick Swap Test", () => {
     );
 
     // then
-    expect(addLiquidityResult).to.not.throws;
     expect(removeLiquidityResult).to.not.throws;
   });
 
@@ -249,11 +308,8 @@ describe("Quick Swap Test", () => {
   });
 
   it("should be deployed with Setting Token Address and Data Feeds Address", async () => {
-    const ChainLinkPriceOracle = await hre.ethers.getContractFactory(
-      "ChainLinkPriceOracle"
-    );
+    const { chainLinkPriceOracle } = await loadFixture(deployTokenFixture);
 
-    const chainLinkPriceOracle = await ChainLinkPriceOracle.deploy();
     await chainLinkPriceOracle.setAssetToPriceFeed(
       WETH,
       "0xF9680D99D6C9589e2a93a78A04A279e509205945"

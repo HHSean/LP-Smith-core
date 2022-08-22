@@ -20,6 +20,16 @@ const config: HardhatUserConfig = {
       forking: {
         url: `${process.env.ALCHEMY_POLYGON_PROVIDER_URL!}`,
       },
+      accounts: [
+        {
+          privateKey: process.env.ACCXOUNT_ZERO_PRIVATE_KEY!,
+          balance: "1000000000000000000000",
+        },
+        {
+          privateKey: process.env.ACCXOUNT_ONE_PRIVATE_KEY!,
+          balance: "1000000000000000000000",
+        },
+      ],
       allowUnlimitedContractSize: true,
     },
     mumbai: {
