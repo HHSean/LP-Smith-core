@@ -34,8 +34,6 @@ contract QuickSwapSmLpToken is ISmLpToken, ERC20, Ownable {
     uint256 tokenXDecimal;
     uint256 tokenYDecimal;
 
-    bool public pendingOnSaleXSign;
-    bool public pendingOnSaleYSign;
     uint256 public pendingOnSaleX;
     uint256 public pendingOnSaleY;
 
@@ -177,22 +175,10 @@ contract QuickSwapSmLpToken is ISmLpToken, ERC20, Ownable {
         );
 
         if (_amountX < _reducedX) {
-            (pendingOnSaleXSign, pendingOnSaleX) = UnsignedCalc
-                .calculateUnsignedAdd(
-                    pendingOnSaleXSign,
-                    pendingOnSaleX,
-                    true,
-                    _reducedX.sub(_amountX)
-                );
+            pendingOnSaleX = pendingOnSaleX.add(_reducedX.sub(_amountX));
         }
         if (_amountY < _reducedY) {
-            (pendingOnSaleYSign, pendingOnSaleY) = UnsignedCalc
-                .calculateUnsignedAdd(
-                    pendingOnSaleXSign,
-                    pendingOnSaleX,
-                    true,
-                    _reducedY.sub(_amountY)
-                );
+            pendingOnSaleY = pendingOnSaleY.add(_reducedY.sub(_amountY));
         }
 
         userStatus[user].totalLpToken = userStatus[user].totalLpToken.sub(
@@ -225,11 +211,9 @@ contract QuickSwapSmLpToken is ISmLpToken, ERC20, Ownable {
         uint256 repaidValue
     ) external onlyLendingPool returns (uint256 _returnAmount) {
         (, , uint256 lpPrice) = _getDebt();
-        _returnAmount = repaidValue
-            .mul(10500)
-            .div(10000)
-            .div(lpPrice)
-            .mul(10**18);
+        _returnAmount = repaidValue.mul(10500).div(10000).div(lpPrice).mul(
+            10**18
+        );
         require(
             userStatus[user].totalLpToken >= _returnAmount,
             "Insufficient Collateral"
@@ -261,22 +245,10 @@ contract QuickSwapSmLpToken is ISmLpToken, ERC20, Ownable {
         );
 
         if (_amountX < _reducedX) {
-            (pendingOnSaleXSign, pendingOnSaleX) = UnsignedCalc
-                .calculateUnsignedAdd(
-                    pendingOnSaleXSign,
-                    pendingOnSaleX,
-                    true,
-                    _reducedX.sub(_amountX)
-                );
+            pendingOnSaleX = pendingOnSaleX.add(_reducedX.sub(_amountX));
         }
         if (_amountY < _reducedY) {
-            (pendingOnSaleYSign, pendingOnSaleY) = UnsignedCalc
-                .calculateUnsignedAdd(
-                    pendingOnSaleXSign,
-                    pendingOnSaleX,
-                    true,
-                    _reducedY.sub(_amountY)
-                );
+            pendingOnSaleY = pendingOnSaleY.add(_reducedY.sub(_amountY));
         }
 
         userStatus[user].realizedLpToken = userStatus[user].realizedLpToken.add(
@@ -438,22 +410,53 @@ contract QuickSwapSmLpToken is ISmLpToken, ERC20, Ownable {
     {
         require(asset == tokenX || asset == tokenY, "Invalid Token Address");
         uint256 debt;
+        uint256 pairDebt;
         uint256 initDebt;
-
+        uint256 initPairDebt;
+        uint256 assetPrice;
+        uint256 pairPrice;
         if (asset == tokenX) {
-            (debt, , ) = _getDebt();
+            (debt, pairDebt, ) = _getDebt();
             initDebt = totalStatus.initX;
+            initPairDebt = totalStatus.initY;
+            assetPrice = IPriceOracle(
+                IFactory(FACTORY_CONTRACT_ADDRESS).getPriceOracle()
+            ).getAssetPrice(tokenX);
+            pairPrice = IPriceOracle(
+                IFactory(FACTORY_CONTRACT_ADDRESS).getPriceOracle()
+            ).getAssetPrice(tokenY);
         } else {
-            (, debt, ) = _getDebt();
+            (pairDebt, debt, ) = _getDebt();
             initDebt = totalStatus.initY;
+            initPairDebt = totalStatus.initX;
+            assetPrice = IPriceOracle(
+                IFactory(FACTORY_CONTRACT_ADDRESS).getPriceOracle()
+            ).getAssetPrice(tokenY);
+            pairPrice = IPriceOracle(
+                IFactory(FACTORY_CONTRACT_ADDRESS).getPriceOracle()
+            ).getAssetPrice(tokenX);
         }
 
         if (initDebt > debt) {
-            _isPositive = true;
+            _isPositive = false;
             _potentialOnSale = initDebt.sub(debt);
         } else {
-            _isPositive = false;
-            _potentialOnSale = debt.sub(initDebt);
+            _isPositive = true;
+            if (tokenX == asset) {
+                _potentialOnSale = initPairDebt
+                    .sub(pairDebt)
+                    .mul(pairPrice)
+                    .div(assetPrice)
+                    .mul(10**tokenXDecimal)
+                    .div(10**tokenYDecimal);
+            } else {
+                _potentialOnSale = initPairDebt
+                    .sub(pairDebt)
+                    .mul(pairPrice)
+                    .div(assetPrice)
+                    .mul(10**tokenYDecimal)
+                    .div(10**tokenXDecimal);
+            }
         }
     }
 
@@ -462,13 +465,64 @@ contract QuickSwapSmLpToken is ISmLpToken, ERC20, Ownable {
         view
         returns (bool _isPositive, uint256 _pendingOnSale)
     {
+        uint256 tokenXPrice = IPriceOracle(
+            IFactory(FACTORY_CONTRACT_ADDRESS).getPriceOracle()
+        ).getAssetPrice(tokenX);
+        uint256 tokenYPrice = IPriceOracle(
+            IFactory(FACTORY_CONTRACT_ADDRESS).getPriceOracle()
+        ).getAssetPrice(tokenY);
+
         require(asset == tokenX || asset == tokenY, "Invalid Token Address");
         if (asset == tokenX) {
-            _isPositive = pendingOnSaleXSign;
-            _pendingOnSale = pendingOnSaleX;
+            _isPositive =
+                pendingOnSaleY.mul(tokenYPrice).mul(10**tokenXDecimal) >
+                pendingOnSaleX.mul(tokenXPrice).mul(10**tokenYDecimal);
+            if (_isPositive) {
+                _pendingOnSale = (
+                    (pendingOnSaleY.mul(tokenYPrice).mul(10**tokenXDecimal))
+                        .sub(
+                            pendingOnSaleX.mul(tokenXPrice).mul(
+                                10**tokenYDecimal
+                            )
+                        )
+                ).div(tokenXPrice).div(10**tokenYDecimal);
+            } else {
+                _pendingOnSale = (
+                    (pendingOnSaleX.mul(tokenXPrice).mul(10**tokenYDecimal))
+                        .sub(
+                            (
+                                pendingOnSaleY.mul(tokenYPrice).mul(
+                                    10**tokenXDecimal
+                                )
+                            )
+                        )
+                ).div(tokenXPrice).div(10**tokenYDecimal);
+            }
         } else {
-            _isPositive = pendingOnSaleYSign;
-            _pendingOnSale = pendingOnSaleY;
+            _isPositive =
+                pendingOnSaleY.mul(tokenYPrice).mul(10**tokenXDecimal) <
+                pendingOnSaleX.mul(tokenXPrice).mul(10**tokenYDecimal);
+            if (_isPositive) {
+                _pendingOnSale = (
+                    (pendingOnSaleX.mul(tokenXPrice).mul(10**tokenYDecimal))
+                        .sub(
+                            pendingOnSaleY.mul(tokenYPrice).mul(
+                                10**tokenXDecimal
+                            )
+                        )
+                ).div(tokenYPrice).div(10**tokenXDecimal);
+            } else {
+                _pendingOnSale = (
+                    (pendingOnSaleY.mul(tokenYPrice).mul(10**tokenXDecimal))
+                        .sub(
+                            (
+                                pendingOnSaleX.mul(tokenXPrice).mul(
+                                    10**tokenYDecimal
+                                )
+                            )
+                        )
+                ).div(tokenYPrice).div(10**tokenXDecimal);
+            }
         }
     }
 
@@ -478,21 +532,9 @@ contract QuickSwapSmLpToken is ISmLpToken, ERC20, Ownable {
     {
         require(asset == tokenX || asset == tokenY, "Invalid Token Address");
         if (asset == tokenX) {
-            (pendingOnSaleXSign, pendingOnSaleX) = UnsignedCalc
-                .calculateUnsignedSub(
-                    pendingOnSaleXSign,
-                    pendingOnSaleX,
-                    true,
-                    saledAmount
-                );
+            pendingOnSaleX = pendingOnSaleX.sub(saledAmount);
         } else {
-            (pendingOnSaleYSign, pendingOnSaleY) = UnsignedCalc
-                .calculateUnsignedSub(
-                    pendingOnSaleYSign,
-                    pendingOnSaleY,
-                    true,
-                    saledAmount
-                );
+            pendingOnSaleY = pendingOnSaleY.sub(saledAmount);
         }
     }
 
