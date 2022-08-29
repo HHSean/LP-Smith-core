@@ -93,6 +93,7 @@ async function deploy() {
   const chainLinkPriceOracle = await ChainLinkPriceOracle.deploy();
 
   await chainLinkPriceOracle.deployed();
+  /*
   await chainLinkPriceOracle.setAssetPrice(
     WETH,
     hre.ethers.utils.parseUnits("1800", 18)
@@ -101,7 +102,7 @@ async function deploy() {
     USDC,
     hre.ethers.utils.parseUnits("1", 18)
   );
-
+*/
   const GeneralLogic = await hre.ethers.getContractFactory("GeneralLogic");
 
   const generalLogic = await GeneralLogic.deploy();
