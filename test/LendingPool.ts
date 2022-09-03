@@ -185,7 +185,6 @@ async function deploy() {
     QUICKSWAP_ETH_BTC_POOL_IN_POLYGON
   );
 
-
   await ethUSDCLpTokenContract
     .connect(ethUsdcLpTokenSigner)
     .transfer(FAKE_ACCOUNT_ZERO, hre.ethers.utils.parseUnits("2", 14));
@@ -282,7 +281,7 @@ async function deploy() {
     tokenDecimal.address
   );
   await quickSwapSmLpToken.deployed();
-  
+
   await lendingPool.addSmLpToken(
     QUICKSWAP_ETH_USDC_POOL_IN_POLYGON,
     quickSwapSmLpToken.address,
@@ -334,6 +333,8 @@ async function deploy() {
     .connect(defaultSigner)
     .approve(lendingPool.address, hre.ethers.utils.parseUnits("100000", 18));
 
+  console.log("Error occur at this point!");
+  //TODO: Resolve Error
   await lendingPool
     .connect(defaultSigner)
     .deposit(WETH, hre.ethers.utils.parseUnits("5", 18));
